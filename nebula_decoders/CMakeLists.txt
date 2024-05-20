@@ -46,6 +46,12 @@ link_libraries(
 )
 
 # Lidar Decoders
+
+# Hesai
+ament_auto_add_library(nebula_decoders_seyond SHARED
+        src/nebula_decoders_seyond/seyond_driver.cpp
+        )
+
 # Hesai
 add_library(nebula_decoders_hesai SHARED
     src/nebula_decoders_hesai/hesai_driver.cpp
