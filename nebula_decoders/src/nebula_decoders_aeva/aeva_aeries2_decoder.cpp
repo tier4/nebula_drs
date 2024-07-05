@@ -46,8 +46,8 @@ void AevaAeries2Decoder::processPointcloudMessage(const aeva::PointCloudMessage 
     AevaPoint point;
 
     point.distance = raw_point.range.value();
-    point.azimuth = -raw_point.azimuth.value() * M_PI_2f;
-    point.elevation = raw_point.elevation.value() * M_PI_4f;
+    point.azimuth = -raw_point.azimuth.value() * M_PI_2;
+    point.elevation = raw_point.elevation.value() * M_PI_4;
 
     ReturnType return_type = getReturnType(raw_point.peak_id);
 

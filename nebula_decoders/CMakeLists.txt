@@ -96,25 +96,25 @@ target_include_directories(nebula_decoders_robosense_info PUBLIC
     ${robosense_msgs_INCLUDE_DIRS}
 )
 
-# Continental
-add_library(nebula_decoders_continental SHARED
-    src/nebula_decoders_continental/decoders/continental_ars548_decoder.cpp
-    src/nebula_decoders_continental/decoders/continental_srr520_decoder.cpp
-)
-target_link_libraries(nebula_decoders_continental PUBLIC
-    ${continental_msgs_TARGETS}
-    ${diagnostic_msgs_TARGETS}
-    ${boost_udp_driver_TARGETS}
-    ${nebula_common_TARGETS}
-    ${nebula_msgs_TARGETS}
-)
-target_include_directories(nebula_decoders_continental PUBLIC
-    ${continental_msgs_INCLUDE_DIRS}
-    ${diagnostic_msgs_INCLUDE_DIRS}
-    ${boost_udp_driver_INCLUDE_DIRS}
-    ${nebula_common_INCLUDE_DIRS}
-    ${nebula_msgs_INCLUDE_DIRS}
-)
+# # Continental
+# add_library(nebula_decoders_continental SHARED
+#     src/nebula_decoders_continental/decoders/continental_ars548_decoder.cpp
+#     src/nebula_decoders_continental/decoders/continental_srr520_decoder.cpp
+# )
+# target_link_libraries(nebula_decoders_continental PUBLIC
+#     ${continental_msgs_TARGETS}
+#     ${diagnostic_msgs_TARGETS}
+#     ${boost_udp_driver_TARGETS}
+#     ${nebula_common_TARGETS}
+#     ${nebula_msgs_TARGETS}
+# )
+# target_include_directories(nebula_decoders_continental PUBLIC
+#     ${continental_msgs_INCLUDE_DIRS}
+#     ${diagnostic_msgs_INCLUDE_DIRS}
+#     ${boost_udp_driver_INCLUDE_DIRS}
+#     ${nebula_common_INCLUDE_DIRS}
+#     ${nebula_msgs_INCLUDE_DIRS}
+# )
 
 # Aeva
 add_library(nebula_decoders_aeva SHARED
@@ -154,7 +154,7 @@ install(TARGETS nebula_decoders_hesai EXPORT export_nebula_decoders_hesai)
 install(TARGETS nebula_decoders_velodyne EXPORT export_nebula_decoders_velodyne)
 install(TARGETS nebula_decoders_robosense EXPORT export_nebula_decoders_robosense)
 install(TARGETS nebula_decoders_robosense_info EXPORT export_nebula_decoders_robosense_info)
-install(TARGETS nebula_decoders_continental EXPORT export_nebula_decoders_continental)
+# install(TARGETS nebula_decoders_continental EXPORT export_nebula_decoders_continental)
 install(TARGETS nebula_decoders_aeva EXPORT export_nebula_decoders_aeva)
 install(TARGETS nebula_decoders_seyond EXPORT export_nebula_decoders_seyond)
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
@@ -169,7 +169,7 @@ ament_export_targets(export_nebula_decoders_hesai)
 ament_export_targets(export_nebula_decoders_velodyne)
 ament_export_targets(export_nebula_decoders_robosense)
 ament_export_targets(export_nebula_decoders_robosense_info)
-ament_export_targets(export_nebula_decoders_continental)
+# ament_export_targets(export_nebula_decoders_continental)
 ament_export_targets(export_nebula_decoders_aeva)
 ament_export_targets(export_nebula_decoders_seyond)
 
