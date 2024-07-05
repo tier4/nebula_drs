@@ -22,7 +22,7 @@ HesaiHwInterfaceWrapper::HesaiHwInterfaceWrapper(
 
   if (status_ != Status::OK) {
     throw std::runtime_error(
-      (std::stringstream{} << "Could not initialize HW interface: " << status_).str());
+      "Could not initialize HW interface");
   }
 
   hw_interface_->SetLogger(std::make_shared<rclcpp::Logger>(parent_node->get_logger()));

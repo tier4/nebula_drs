@@ -19,7 +19,7 @@ RobosenseHwInterfaceWrapper::RobosenseHwInterfaceWrapper(
 
   if (Status::OK != status_) {
     throw std::runtime_error(
-      (std::stringstream{} << "Sensor configuration invalid: " << status_).str());
+      "Sensor configuration invalid");
   }
 }
 

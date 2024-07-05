@@ -35,7 +35,7 @@ HesaiDecoderWrapper::HesaiDecoderWrapper(
 
   if (!calibration_result.has_value()) {
     throw std::runtime_error(
-      (std::stringstream() << "No valid calibration found: " << calibration_result.error()).str());
+      "No valid calibration found");
   }
 
   calibration_cfg_ptr_ = calibration_result.value();
@@ -49,7 +49,7 @@ HesaiDecoderWrapper::HesaiDecoderWrapper(
 
   if (Status::OK != status_) {
     throw std::runtime_error(
-      (std::stringstream() << "Error instantiating decoder: " << status_).str());
+      "Error instantiating decoder");
   }
 
   // Publish packets only if HW interface is connected
@@ -127,9 +127,7 @@ rcl_interfaces::msg::SetParametersResult HesaiDecoderWrapper::OnParameterChange(
     auto result = SetParametersResult();
     result.successful = false;
     result.reason =
-      (std::stringstream() << "Could not change calibration file to '" << calibration_path
-                           << "': " << get_calibration_result.error())
-        .str();
+      "Could not change calibration file";
     return result;
   }
 

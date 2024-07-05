@@ -23,7 +23,7 @@ VelodyneRosWrapper::VelodyneRosWrapper(const rclcpp::NodeOptions & options)
 
   if (wrapper_status_ != Status::OK) {
     throw std::runtime_error(
-      (std::stringstream{} << "Sensor configuration invalid: " << wrapper_status_).str());
+      "Sensor configuration invalid");
   }
 
   RCLCPP_INFO_STREAM(get_logger(), "Sensor Configuration: " << *sensor_cfg_ptr_);
@@ -225,7 +225,7 @@ rcl_interfaces::msg::SetParametersResult VelodyneRosWrapper::OnParameterChange(
     RCLCPP_WARN_STREAM(get_logger(), "OnParameterChange aborted: " << status);
     auto result = SetParametersResult();
     result.successful = false;
-    result.reason = (std::stringstream() << "Invalid configuration: " << status).str();
+    result.reason = "Invalid configuration";
     return result;
   }
 
