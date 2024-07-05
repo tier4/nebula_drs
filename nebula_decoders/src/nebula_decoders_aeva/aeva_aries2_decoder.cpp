@@ -48,8 +48,8 @@ void AevaAries2Decoder::processPointcloudMessage(const aeva::PointCloudMessage &
     AevaPoint point;
 
     point.distance = raw_point.range.value();
-    point.azimuth = -raw_point.azimuth.value() * M_PI_2f;
-    point.elevation = raw_point.elevation.value() * M_PI_4f;
+    point.azimuth = -raw_point.azimuth.value() * M_PI_2;
+    point.elevation = raw_point.elevation.value() * M_PI_4;
 
     ReturnType return_type{ReturnType::UNKNOWN};
     // TODO(mojomex): Currently, there is no info published by the sensor on which return mode is
