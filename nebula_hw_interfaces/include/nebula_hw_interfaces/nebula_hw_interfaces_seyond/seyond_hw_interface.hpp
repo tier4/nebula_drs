@@ -19,8 +19,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "nebula_msgs/msg/nebula_packet.hpp"
-#include "nebula_msgs/msg/nebula_packets.hpp"
+#include <nebula_msgs/msg/nebula_packet.hpp>
+#include <nebula_msgs/msg/nebula_packets.hpp>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/json_parser.hpp>

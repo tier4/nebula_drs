@@ -103,11 +103,26 @@ target_include_directories(nebula_hw_interfaces_aeva PUBLIC
     ${boost_udp_driver_INCLUDE_DIRS}
 )
 
+add_library(nebula_hw_interfaces_seyond SHARED
+    src/nebula_seyond_hw_interfaces/seyond_hw_interface.cpp
+)
+target_link_libraries(nebula_hw_interfaces_seyond PUBLIC
+    ${boost_tcp_driver_LIBRARIES}
+    ${boost_udp_driver_LIBRARIES}
+    ${nebula_msgs_TARGETS}
+)
+target_include_directories(nebula_hw_interfaces_seyond PUBLIC
+    ${boost_tcp_driver_INCLUDE_DIRS}
+    ${boost_udp_driver_INCLUDE_DIRS}
+    ${nebula_msgs_INCLUDE_DIRS}
+)
+
 install(TARGETS nebula_hw_interfaces_hesai EXPORT export_nebula_hw_interfaces_hesai)
 install(TARGETS nebula_hw_interfaces_velodyne EXPORT export_nebula_hw_interfaces_velodyne)
 install(TARGETS nebula_hw_interfaces_robosense EXPORT export_nebula_hw_interfaces_robosense)
 install(TARGETS nebula_hw_interfaces_continental EXPORT export_nebula_hw_interfaces_continental)
 install(TARGETS nebula_hw_interfaces_aeva EXPORT export_nebula_hw_interfaces_aeva)
+install(TARGETS nebula_hw_interfaces_seyond EXPORT export_nebula_hw_interfaces_seyond)
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 
 if(BUILD_TESTING)
@@ -121,6 +136,7 @@ ament_export_targets(export_nebula_hw_interfaces_velodyne)
 ament_export_targets(export_nebula_hw_interfaces_robosense)
 ament_export_targets(export_nebula_hw_interfaces_continental)
 ament_export_targets(export_nebula_hw_interfaces_aeva)
+ament_export_targets(export_nebula_hw_interfaces_seyond)
 
 ament_export_dependencies(
     boost_tcp_driver

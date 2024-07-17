@@ -47,12 +47,6 @@ link_libraries(
 
 # Lidar Decoders
 
-# Seyond
-ament_auto_add_library(nebula_decoders_seyond SHARED
-        src/nebula_decoders_seyond/seyond_driver.cpp
-        src/nebula_decoders_seyond/decoders/seyond_decoder.cpp
-        )
-
 # Hesai
 add_library(nebula_decoders_hesai SHARED
     src/nebula_decoders_hesai/hesai_driver.cpp
@@ -142,12 +136,27 @@ target_include_directories(nebula_decoders_aeva PUBLIC
     ${nebula_msgs_INCLUDE_DIRS}
 )
 
+# Seyond
+add_library(nebula_decoders_seyond SHARED
+        src/nebula_decoders_seyond/seyond_driver.cpp
+        src/nebula_decoders_seyond/decoders/seyond_decoder.cpp
+)
+target_link_libraries(nebula_decoders_seyond PUBLIC
+    ${nebula_msgs_TARGETS}
+    ${nebula_common_TARGETS}
+)
+target_include_directories(nebula_decoders_seyond PUBLIC
+    ${nebula_msgs_INCLUDE_DIRS}
+    ${nebula_common_INCLUDE_DIRS}
+)
+
 install(TARGETS nebula_decoders_hesai EXPORT export_nebula_decoders_hesai)
 install(TARGETS nebula_decoders_velodyne EXPORT export_nebula_decoders_velodyne)
 install(TARGETS nebula_decoders_robosense EXPORT export_nebula_decoders_robosense)
 install(TARGETS nebula_decoders_robosense_info EXPORT export_nebula_decoders_robosense_info)
 install(TARGETS nebula_decoders_continental EXPORT export_nebula_decoders_continental)
 install(TARGETS nebula_decoders_aeva EXPORT export_nebula_decoders_aeva)
+install(TARGETS nebula_decoders_seyond EXPORT export_nebula_decoders_seyond)
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 
 if(BUILD_TESTING)
@@ -162,6 +171,7 @@ ament_export_targets(export_nebula_decoders_robosense)
 ament_export_targets(export_nebula_decoders_robosense_info)
 ament_export_targets(export_nebula_decoders_continental)
 ament_export_targets(export_nebula_decoders_aeva)
+ament_export_targets(export_nebula_decoders_seyond)
 
 install(
   DIRECTORY calibration

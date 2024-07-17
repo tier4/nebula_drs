@@ -1,6 +1,5 @@
 #pragma once
 
-#include "nebula_ros/common/mt_queue.hpp"
 #include "nebula_ros/common/parameter_descriptors.hpp"
 #include "nebula_ros/seyond/decoder_wrapper.hpp"
 #include "nebula_ros/seyond/hw_interface_wrapper.hpp"
@@ -10,6 +9,7 @@
 #include <nebula_common/nebula_common.hpp>
 #include <nebula_common/nebula_status.hpp>
 #include <nebula_common/seyond/seyond_common.hpp>
+#include <nebula_common/util/mt_queue.hpp>
 #include <nebula_hw_interfaces/nebula_hw_interfaces_seyond/seyond_hw_interface.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
@@ -23,10 +23,11 @@
 
 #include <array>
 #include <chrono>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <thread>
-#include <memory>
+#include <vector>
 
 namespace nebula
 {
@@ -63,7 +64,7 @@ private:
   std::shared_ptr<const SeyondSensorConfiguration> sensor_cfg_ptr_{};
   std::mutex mtx_config_{};
 
-  mt_queue<std::unique_ptr<nebula_msgs::msg::NebulaPacket>> packet_queue_;
+  MtQueue<std::unique_ptr<nebula_msgs::msg::NebulaPacket>> packet_queue_;
 
   /// @brief Thread to isolate decoding from receiving
   std::thread decoder_thread_{};

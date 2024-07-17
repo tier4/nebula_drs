@@ -237,12 +237,39 @@ rclcpp_components_register_node(aeva_ros_wrapper
     EXECUTABLE aeva_ros_wrapper_node
 )
 
+## Seyond
+add_library(seyond_ros_wrapper SHARED
+    src/seyond/seyond_ros_wrapper.cpp
+    src/seyond/decoder_wrapper.cpp
+    src/seyond/hw_interface_wrapper.cpp
+    src/seyond/hw_monitor_wrapper.cpp
+    src/common/parameter_descriptors.cpp
+)
+
+target_include_directories(seyond_ros_wrapper PUBLIC
+    ${nebula_decoders_INCLUDE_DIRS}
+    ${nebula_hw_interfaces_INCLUDE_DIRS}
+    ${nebula_msgs_INCLUDE_DIRS}
+)
+
+target_link_libraries(seyond_ros_wrapper PUBLIC
+    ${nebula_msgs_TARGETS}
+    nebula_decoders::nebula_decoders_seyond
+    nebula_hw_interfaces::nebula_hw_interfaces_seyond
+)
+
+rclcpp_components_register_node(seyond_ros_wrapper
+    PLUGIN "SeyondRosWrapper"
+    EXECUTABLE seyond_ros_wrapper_node
+)
+
 install(TARGETS hesai_ros_wrapper EXPORT export_hesai_ros_wrapper)
 install(TARGETS velodyne_ros_wrapper EXPORT export_velodyne_ros_wrapper)
 install(TARGETS robosense_ros_wrapper EXPORT export_robosense_ros_wrapper)
 install(TARGETS continental_ars548_ros_wrapper EXPORT export_continental_ars548_ros_wrapper)
 install(TARGETS continental_srr520_ros_wrapper EXPORT export_continental_srr520_ros_wrapper)
 install(TARGETS aeva_ros_wrapper EXPORT export_aeva_ros_wrapper)
+install(TARGETS seyond_ros_wrapper EXPORT export_seyond_ros_wrapper)
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 
 if(BUILD_TESTING)
@@ -256,6 +283,7 @@ ament_export_targets(export_velodyne_ros_wrapper)
 ament_export_targets(export_robosense_ros_wrapper)
 ament_export_targets(export_continental_ars548_ros_wrapper)
 ament_export_targets(export_aeva_ros_wrapper)
+ament_export_targets(export_seyond_ros_wrapper)
 
 install(
   DIRECTORY config launch

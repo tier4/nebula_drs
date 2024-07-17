@@ -8,8 +8,8 @@
 #include "nebula_decoders/nebula_decoders_common/nebula_driver_base.hpp"
 #include "nebula_decoders/nebula_decoders_seyond/decoders/seyond_decoder.hpp"
 
-#include "nebula_msgs/msg/nebula_packet.hpp"
-#include "nebula_msgs/msg/nebula_packets.hpp"
+#include <nebula_msgs/msg/nebula_packet.hpp>
+#include <nebula_msgs/msg/nebula_packets.hpp>
 
 #include <pcl_conversions/pcl_conversions.h>
 
