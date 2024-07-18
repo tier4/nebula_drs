@@ -14,7 +14,7 @@ endif ()
 find_package(ament_cmake_auto REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common)
 find_package(angles REQUIRED)
-find_package(continental_msgs REQUIRED)
+# find_package(continental_msgs REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
 find_package(nebula_common REQUIRED)
 find_package(nebula_msgs REQUIRED)
@@ -182,7 +182,7 @@ ament_export_dependencies(
     PCL
     pcl_conversions
     angles
-    continental_msgs
+    # continental_msgs
     diagnostic_msgs
     nebula_common
     nebula_msgs

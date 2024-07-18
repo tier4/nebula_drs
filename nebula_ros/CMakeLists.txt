@@ -12,8 +12,8 @@ endif ()
 
 find_package(ament_cmake_auto REQUIRED)
 find_package(PCL REQUIRED components common)
-find_package(continental_msgs REQUIRED)
-find_package(continental_srvs REQUIRED)
+# find_package(continental_msgs REQUIRED)
+# find_package(continental_srvs REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
 find_package(diagnostic_updater REQUIRED)
 find_package(geometry_msgs REQUIRED)
@@ -292,8 +292,8 @@ install(
 
 ament_export_dependencies(
     PCL
-    continental_msgs
-    continental_srvs
+    # continental_msgs
+    # continental_srvs
     diagnostic_msgs
     diagnostic_updater
     geometry_msgs

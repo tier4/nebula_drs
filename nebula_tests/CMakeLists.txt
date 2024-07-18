@@ -56,10 +56,10 @@ if(BUILD_TESTING)
         ${nebula_tests_common}
     )
 
-    set(CONTINENTAL_TEST_LIBRARIES
-        ${COMMON_TEST_LIBRARIES}
-        nebula_decoders::nebula_decoders_continental
-    )
+    # set(CONTINENTAL_TEST_LIBRARIES
+    #     ${COMMON_TEST_LIBRARIES}
+    #     nebula_decoders::nebula_decoders_continental
+    # )
 
     set(HESAI_TEST_LIBRARIES
         ${COMMON_TEST_LIBRARIES}
@@ -77,7 +77,7 @@ if(BUILD_TESTING)
     )
 
     add_subdirectory(aeva)
-    add_subdirectory(continental)
+    # add_subdirectory(continental)
     add_subdirectory(hesai)
     add_subdirectory(velodyne)
 
