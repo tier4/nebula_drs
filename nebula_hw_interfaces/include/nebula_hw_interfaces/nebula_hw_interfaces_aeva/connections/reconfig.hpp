@@ -215,7 +215,9 @@ private:
     std::vector<std::string> response_types;
     response_types.reserve(responses.size());
     for (const auto & response : responses) {
-      response_types.push_back((std::stringstream{} << response.type).str());
+      std::stringstream ss;
+      ss << response.type;
+      response_types.push_back(ss.str());
     }
 
     NEBULA_LOG_STREAM(

@@ -16,11 +16,10 @@ SeyondHwInterfaceWrapper::SeyondHwInterfaceWrapper(
   bool retry_connect = parent_node->declare_parameter<bool>("retry_hw", true, param_read_only());
 
   status_ = hw_interface_->SetSensorConfiguration(
-      std::static_pointer_cast<const drivers::SensorConfigurationBase>(config));
+    std::static_pointer_cast<const drivers::SensorConfigurationBase>(config));
 
   if (status_ != Status::OK) {
-    throw std::runtime_error(
-      (std::stringstream{} << "Could not initialize HW interface: " << status_).str());
+    throw std::runtime_error("Could not initialize HW interface");
   }
 
   hw_interface_->SetLogger(std::make_shared<rclcpp::Logger>(parent_node->get_logger()));
@@ -29,11 +28,9 @@ SeyondHwInterfaceWrapper::SeyondHwInterfaceWrapper(
   int retry_count = 0;
 
   // NOTE: for when TP interface is implemented
-  while (true)
-  {
+  while (true) {
     status_ = hw_interface_->InitializeTcpDriver();
-    if (status_ == Status::OK || !retry_connect)
-    {
+    if (status_ == Status::OK || !retry_connect) {
       break;
     }
 
@@ -55,7 +52,7 @@ void SeyondHwInterfaceWrapper::OnConfigChange(
   const std::shared_ptr<const SeyondSensorConfiguration> & new_config)
 {
   hw_interface_->SetSensorConfiguration(
-      std::static_pointer_cast<const drivers::SensorConfigurationBase>(new_config));
+    std::static_pointer_cast<const drivers::SensorConfigurationBase>(new_config));
   if (setup_sensor_) {
     hw_interface_->CheckAndSetConfig();
   }

@@ -20,8 +20,7 @@ SeyondRosWrapper::SeyondRosWrapper(const rclcpp::NodeOptions & options)
   wrapper_status_ = DeclareAndGetSensorConfigParams();
 
   if (wrapper_status_ != Status::OK) {
-    throw std::runtime_error(
-      (std::stringstream{} << "Sensor configuration invalid: " << wrapper_status_).str());
+    throw std::runtime_error("Sensor configuration invalid");
   }
 
   RCLCPP_INFO_STREAM(get_logger(), "SensorConfig: " << *sensor_cfg_ptr_);
