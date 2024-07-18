@@ -455,6 +455,12 @@ inline std::ostream & operator<<(std::ostream & os, nebula::drivers::SensorModel
     case SensorModel::AEVA_AERIES2:
       os << "Aeries II";
       break;
+    case SensorModel::SEYOND_FALCON_KINETIC:
+      os << "Falcon";
+      break;
+    case SensorModel::SEYOND_ROBIN_W:
+      os << "RobinW";
+      break;
     case SensorModel::UNKNOWN:
       os << "Sensor Unknown";
       break;
@@ -594,6 +600,9 @@ inline SensorModel SensorModelFromString(const std::string & sensor_model)
   if (sensor_model == "ARS548") return SensorModel::CONTINENTAL_ARS548;
   if (sensor_model == "SRR520") return SensorModel::CONTINENTAL_SRR520;
   if (sensor_model == "Aeries2") return SensorModel::AEVA_AERIES2;
+  // Seyond
+  if (sensor_model == "Falcon") return SensorModel::SEYOND_FALCON_KINETIC;
+  if (sensor_model == "RobinW") return SensorModel::SEYOND_ROBIN_W;
   return SensorModel::UNKNOWN;
 }
 
@@ -646,6 +655,11 @@ inline std::string SensorModelToString(const SensorModel & sensor_model)
       return "SRR520";
     case SensorModel::AEVA_AERIES2:
       return "Aeries II";
+    // Seyond
+    case SensorModel::SEYOND_FALCON_KINETIC:
+      return "Falcon";
+    case SensorModel::SEYOND_ROBIN_W:
+      return "RobinW";
     default:
       return "UNKNOWN";
   }
