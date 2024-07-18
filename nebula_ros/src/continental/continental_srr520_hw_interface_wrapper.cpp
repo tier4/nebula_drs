@@ -171,7 +171,7 @@ void ContinentalSRR520HwInterfaceWrapper::ConfigureSensorRequestCallback(
     request->plug_bottom, request->reset_sensor_configuration);
 
   response->success = result == Status::OK;
-  response->message = (std::stringstream() << result).str();
+  //response->message = (std::stringstream() << result).str();
 }
 
 void ContinentalSRR520HwInterfaceWrapper::syncTimerCallback()

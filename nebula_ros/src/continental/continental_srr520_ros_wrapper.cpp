@@ -210,7 +210,7 @@ rcl_interfaces::msg::SetParametersResult ContinentalSRR520RosWrapper::OnParamete
     RCLCPP_WARN_STREAM(get_logger(), "OnParameterChange aborted: " << status);
     auto result = SetParametersResult();
     result.successful = false;
-    result.reason = (std::stringstream() << "Invalid configuration: " << status).str();
+    result.reason = "Invalid configuration";
     return result;
   }
 

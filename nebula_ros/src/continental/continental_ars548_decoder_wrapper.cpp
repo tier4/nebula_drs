@@ -41,8 +41,7 @@ ContinentalARS548DecoderWrapper::ContinentalARS548DecoderWrapper(
   status_ = driver_ptr_->GetStatus();
 
   if (Status::OK != status_) {
-    throw std::runtime_error(
-      (std::stringstream() << "Error instantiating decoder: " << status_).str());
+    throw std::runtime_error("Error instantiating decoder");
   }
 
   // Publish packets only if HW interface is connected
