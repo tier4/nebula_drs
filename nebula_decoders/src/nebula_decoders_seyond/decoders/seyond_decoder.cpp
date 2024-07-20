@@ -63,8 +63,8 @@ void SeyondDecoder::point_xyz_data_parse_(
     }
 
     if (
-      (point_ptr->radius < sensor_configuration_->cloud_min_range) ||
-      (point_ptr->radius > sensor_configuration_->cloud_max_range)) {
+      (point_ptr->radius < sensor_configuration_->min_range) ||
+      (point_ptr->radius > sensor_configuration_->max_range)) {
       continue;
     }
 
