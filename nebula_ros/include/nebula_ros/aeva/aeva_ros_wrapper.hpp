@@ -64,8 +64,7 @@ private:
   {
     json param_value = declare_parameter<T>(dot_delimited_path, param_read_write());
     json tree_patch = util::to_json_tree(param_value, util::to_json_path(dot_delimited_path));
-    //inout_tree.update(tree_patch, true);
-    inout_tree.update(tree_patch);
+    inout_tree.update(tree_patch, true);
   }
 
   template <typename T>
@@ -79,8 +78,7 @@ private:
 
     json json_value = value;
     json tree_patch = util::to_json_tree(json_value, util::to_json_path(dot_delimited_path));
-    //inout_tree.update(tree_patch, true);
-    inout_tree.update(tree_patch);
+    inout_tree.update(tree_patch, true);
     return true;
   }
 
