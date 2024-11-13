@@ -223,11 +223,16 @@ add_library(aeva_ros_wrapper SHARED
 )
 
 target_include_directories(aeva_ros_wrapper PUBLIC
+    ${diagnostic_updater_INCLUDE_DIRS}
     ${nebula_decoders_INCLUDE_DIRS}
     ${nebula_hw_interfaces_INCLUDE_DIRS}
+    ${nebula_msgs_INCLUDE_DIRS}
 )
 
 target_link_libraries(aeva_ros_wrapper PUBLIC
+    ${diagnostic_updater_TARGETS}
+    ${diagnostic_msgs_TARGETS}
+    ${nebula_msgs_TARGETS}
     nebula_decoders::nebula_decoders_aeva
     nebula_hw_interfaces::nebula_hw_interfaces_aeva
 )
@@ -247,12 +252,15 @@ add_library(seyond_ros_wrapper SHARED
 )
 
 target_include_directories(seyond_ros_wrapper PUBLIC
+    ${diagnostic_updater_INCLUDE_DIRS}
     ${nebula_decoders_INCLUDE_DIRS}
     ${nebula_hw_interfaces_INCLUDE_DIRS}
     ${nebula_msgs_INCLUDE_DIRS}
 )
 
 target_link_libraries(seyond_ros_wrapper PUBLIC
+    ${diagnostic_updater_TARGETS}
+    ${diagnostic_msgs_TARGETS}
     ${nebula_msgs_TARGETS}
     nebula_decoders::nebula_decoders_seyond
     nebula_hw_interfaces::nebula_hw_interfaces_seyond
