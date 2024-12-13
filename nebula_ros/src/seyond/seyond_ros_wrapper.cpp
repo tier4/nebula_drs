@@ -30,6 +30,7 @@ SeyondRosWrapper::SeyondRosWrapper(const rclcpp::NodeOptions & options)
   // ////////////////////////////////////////
 
   launch_hw_ = declare_parameter<bool>("launch_hw", param_read_only());
+  publish_pointcloud_ = declare_parameter<bool>("publish_pointcloud", param_read_only());
 
   if (launch_hw_) {
     hw_interface_wrapper_.emplace(this, sensor_cfg_ptr_);
@@ -41,7 +42,8 @@ SeyondRosWrapper::SeyondRosWrapper(const rclcpp::NodeOptions & options)
   // ////////////////////////////////////////
 
   decoder_wrapper_.emplace(
-    this, hw_interface_wrapper_ ? hw_interface_wrapper_->HwInterface() : nullptr, sensor_cfg_ptr_);
+    this, hw_interface_wrapper_ ? hw_interface_wrapper_->HwInterface() : nullptr, sensor_cfg_ptr_,
+    publish_pointcloud_);
 
   RCLCPP_DEBUG(get_logger(), "Starting stream");
 

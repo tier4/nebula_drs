@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="launch_hw" default="true" />
+    <arg name="publish_pointcloud" default="true" />
     <arg name="sensor_model" description="Falcon|RobinW"/>
     <arg name="return_mode" default="Dual" description="See readme for supported return modes"/>
     <arg name="frame_id"  default="seyond"/>
@@ -26,6 +27,7 @@
         <param name="scan_phase" value="$(var scan_phase)"/>
         <param name="sensor_ip" value="$(var sensor_ip)"/>
         <param name="launch_hw" value="$(var launch_hw)"/>
+        <param name="publish_pointcloud" value="$(var publish_pointcloud)"/>
         <param name="host_ip" value="$(var host_ip)"/>
         <param name="data_port" value="$(var data_port)"/>
         <param name="setup_sensor" value="$(var setup_sensor)"/>

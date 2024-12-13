@@ -64,6 +64,12 @@ public:
   /// @return tuple of Point cloud and timestamp
   std::tuple<drivers::NebulaPointCloudPtr, double> ParseCloudPacket(
     const std::vector<uint8_t> & packet);
+
+  /// @brief Peek at the NebulaPackets message without decoding, and test if it belongs to a new
+  /// scan or not
+  /// @param nebula_packets Message
+  /// @return Bool of whether the scan has been completed or not
+  bool PeekCloudPacket(const std::vector<uint8_t> & packet);
 };
 
 }  // namespace drivers
