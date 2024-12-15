@@ -29,6 +29,9 @@ using get_calibration_result_t =
 
 class SeyondDecoderWrapper
 {
+  using get_calibration_result_t = nebula::util::expected<
+    std::shared_ptr<drivers::SeyondCalibrationConfigurationBase>, nebula::Status>;
+
 public:
   SeyondDecoderWrapper(
     rclcpp::Node * const parent_node, const std::shared_ptr<SeyondHwInterface> & hw_interface,

@@ -19,6 +19,14 @@ SeyondDecoderWrapper::SeyondDecoderWrapper(
     throw std::runtime_error("SeyondDecoderWrapper cannot be instantiated without a valid config!");
   }
 
+  if (config->sensor_model == drivers::SensorModel::SEYOND_ROBIN_W) {
+    auto calibration_result = GetCalibrationData();
+    if (!calibration_result.has_value()) {
+      throw std::runtime_error(
+        "No valid calibration found");
+    }
+  }
+
   RCLCPP_INFO(logger_, "Starting Decoder");
 
   driver_ptr_ = std::make_shared<SeyondDriver>(config, calibration_cfg_ptr_);
@@ -62,6 +70,55 @@ void SeyondDecoderWrapper::OnConfigChange(
   auto new_driver = std::make_shared<SeyondDriver>(new_config, calibration_cfg_ptr_);
   driver_ptr_ = new_driver;
   sensor_cfg_ = new_config;
+}
+
+SeyondDecoderWrapper::get_calibration_result_t SeyondDecoderWrapper::GetCalibrationData(
+  const std::string & calibration_file_path, bool ignore_others)
+{
+  std::shared_ptr<drivers::SeyondCalibrationConfigurationBase> calib;
+  calib = std::make_shared<drivers::SeyondCalibrationConfiguration>();
+
+  bool hw_connected = hw_interface_ != nullptr;
+  std::string calibration_file_path_from_sensor;
+
+  {
+    int ext_pos = calibration_file_path.find_last_of('.');
+    calibration_file_path_from_sensor = calibration_file_path.substr(0, ext_pos);
+    calibration_file_path_from_sensor += "_from_sensor_" + sensor_cfg_->sensor_ip;
+    calibration_file_path_from_sensor +=
+      calibration_file_path.substr(ext_pos, calibration_file_path.size() - ext_pos);
+  }
+
+  // If a sensor is connected, try to download and save its calibration data
+  if (!ignore_others && hw_connected) {
+    try {
+      auto raw_data = hw_interface_->GetLidarCalibrationString();
+      RCLCPP_INFO(logger_, "Downloaded calibration data from sensor.");
+      //auto status = calib->SaveToFileFromString(calibration_file_path_from_sensor, raw_data);
+      if (status != Status::OK) {
+        RCLCPP_ERROR_STREAM(logger_, "Could not save calibration data: " << status);
+      } else {
+        RCLCPP_INFO_STREAM(
+          logger_, "Saved downloaded data to " << calibration_file_path_from_sensor);
+      }
+    } catch (std::runtime_error & e) {
+      RCLCPP_ERROR_STREAM(logger_, "Could not download calibration data: " << e.what());
+    }
+  }
+
+  // If saved calibration data from a sensor exists (either just downloaded above, or previously),
+  // try to load it
+  if (!ignore_others && std::filesystem::exists(calibration_file_path_from_sensor)) {
+    // auto status = calib->LoadFromFile(calibration_file_path_from_sensor);
+    // if (status == Status::OK) {
+    //   calib->calibration_file = calibration_file_path_from_sensor;
+    //   return calib;
+    // }
+    RCLCPP_ERROR_STREAM(logger_, "Could not load downloaded calibration data: " << status);
+  } else if (!ignore_others) {
+    RCLCPP_ERROR(logger_, "No downloaded calibration data found.");
+  }
+
 }
 
 void SeyondDecoderWrapper::ProcessCloudPacket(
