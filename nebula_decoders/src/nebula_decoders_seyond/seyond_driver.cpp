@@ -33,12 +33,26 @@ std::tuple<drivers::NebulaPointCloudPtr, double> SeyondDriver::ParseCloudPacket(
     return pointcloud;
   }
 
-  scan_decoder_->unpack(packet);
+  scan_decoder_->unpack(packet, true);
   if (scan_decoder_->hasScanned()) {
     pointcloud = scan_decoder_->getPointcloud();
   }
   return pointcloud;
 }
+
+bool SeyondDriver::PeekCloudPacket(
+  const std::vector<uint8_t> & packet)
+{
+  auto logger = rclcpp::get_logger("SeyondDriver");
+
+  if (driver_status_ != nebula::Status::OK) {
+    RCLCPP_ERROR(logger, "Driver not OK.");
+    return false;
+  }
+  scan_decoder_->unpack(packet, false);
+  return scan_decoder_->hasScanned();
+}
+  
 
 Status SeyondDriver::SetCalibrationConfiguration(
   const SeyondCalibrationConfiguration & calibration_configuration)

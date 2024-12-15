@@ -29,7 +29,7 @@ public:
   /// @brief Parses NebulaPacket and add its points to the point cloud
   /// @param packet The incoming NebulaPacket
   /// @return The last azimuth processed
-  virtual int unpack(const std::vector<uint8_t> & packet) = 0;
+  virtual int unpack(const std::vector<uint8_t> & packet, bool decode) = 0;
 
   /// @brief Indicates whether one full scan is ready
   /// @return Whether a scan is ready

@@ -32,7 +32,7 @@ class SeyondDecoderWrapper
 public:
   SeyondDecoderWrapper(
     rclcpp::Node * const parent_node, const std::shared_ptr<SeyondHwInterface> & hw_interface,
-    std::shared_ptr<const SeyondSensorConfiguration> & config);
+    std::shared_ptr<const SeyondSensorConfiguration> & config, bool decode_flag);
 
   void ProcessCloudPacket(std::unique_ptr<nebula_msgs::msg::NebulaPacket> packet_msg);
 
@@ -47,6 +47,8 @@ private:
 
   nebula::Status status_;
   rclcpp::Logger logger_;
+
+  bool decode_{};
 
   const std::shared_ptr<SeyondHwInterface> hw_interface_;
   std::shared_ptr<const SeyondSensorConfiguration> sensor_cfg_;

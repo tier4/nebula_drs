@@ -73,6 +73,8 @@ private:
 
   bool launch_hw_{};
 
+  bool publish_pointcloud_{};
+
   std::optional<SeyondHwInterfaceWrapper> hw_interface_wrapper_;
   std::optional<SeyondHwMonitorWrapper> hw_monitor_wrapper_;
   std::optional<SeyondDecoderWrapper> decoder_wrapper_;

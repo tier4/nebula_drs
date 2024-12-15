@@ -147,7 +147,7 @@ void SeyondDecoder::data_packet_parse_(const SeyondDataPacket * pkt)
   output_scan_timestamp_ns_ = pkt->common.ts_start_us * 1000;
 }
 
-int SeyondDecoder::unpack(const std::vector<uint8_t> & packet)
+int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
 {
   std::vector<uint8_t> packet_copy = packet;
   if (!IsPacketValid(packet_copy)) {
@@ -168,14 +168,16 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet)
   }
 
   // Publish the whole frame data if scan is complete
-  // TODO(drwnz): have to handl eout-of-order packets. Currently just tossing anything that arrives
+  // TODO(drwnz): have to handle out-of-order packets. Currently just tossing anything that arrives
   // out of order.
   if (current_packet_id_ != packet_id) {
     // std::cout << "Old packet ID: " << current_packet_id_ << ", New packet ID: " << packet_id <<
     // " No. points: " << decode_pc_->size() << std::endl;
-    if ((current_packet_id_ < packet_id) || (packet_id == 0)) {
-      std::swap(decode_pc_, output_pc_);
-      decode_pc_->clear();
+    if ((current_packet_id_ < packet_id) || (packet_id == 0)) {      
+      if (decode) {
+        std::swap(decode_pc_, output_pc_);
+        decode_pc_->clear();
+      }
       has_scanned_ = true;
       current_packet_id_ = packet_id;
     } else {
@@ -183,28 +185,29 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet)
       return -1;
     }
   }
-
-  const SeyondDataPacket * seyond_pkt =
-    reinterpret_cast<const SeyondDataPacket *>(reinterpret_cast<const char *>(&packet_copy[0]));
-  if (is_sphere_data(seyond_pkt->type)) {
-    // convert sphere to xyz
-    bool ret_val = convert_to_xyz_pointcloud(
-      *seyond_pkt, reinterpret_cast<SeyondDataPacket *>(&xyz_from_sphere_[0]), kConvertSize, false);
-    if (!ret_val) {
-      RCLCPP_ERROR_STREAM(logger_, "convert_to_xyz_pointcloud failed");
-      return -1;
+  if (decode) {
+    const SeyondDataPacket * seyond_pkt =
+      reinterpret_cast<const SeyondDataPacket *>(reinterpret_cast<const char *>(&packet_copy[0]));
+    if (is_sphere_data(seyond_pkt->type)) {
+      // convert sphere to xyz
+      bool ret_val = convert_to_xyz_pointcloud(
+        *seyond_pkt, reinterpret_cast<SeyondDataPacket *>(&xyz_from_sphere_[0]), kConvertSize, false);
+      if (!ret_val) {
+        RCLCPP_ERROR_STREAM(logger_, "convert_to_xyz_pointcloud failed");
+        return -1;
+      }
+      data_packet_parse_(reinterpret_cast<SeyondDataPacket *>(&xyz_from_sphere_[0]));
+    } else if (is_xyz_data(seyond_pkt->type)) {
+      data_packet_parse_(seyond_pkt);
+    } else {
+      RCLCPP_ERROR_STREAM(logger_, "cframe type" << seyond_pkt->type << "is not supported");
     }
-    data_packet_parse_(reinterpret_cast<SeyondDataPacket *>(&xyz_from_sphere_[0]));
-  } else if (is_xyz_data(seyond_pkt->type)) {
-    data_packet_parse_(seyond_pkt);
-  } else {
-    RCLCPP_ERROR_STREAM(logger_, "cframe type" << seyond_pkt->type << "is not supported");
-  }
 
-  decode_scan_timestamp_ns_ = seyond_pkt->common.ts_start_us * 1000;
+    decode_scan_timestamp_ns_ = seyond_pkt->common.ts_start_us * 1000;
 
-  if (has_scanned_) {
-    output_scan_timestamp_ns_ = decode_scan_timestamp_ns_;
+    if (has_scanned_) {
+      output_scan_timestamp_ns_ = decode_scan_timestamp_ns_;
+    }
   }
   return 0;
 }

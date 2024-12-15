@@ -131,7 +131,9 @@ public:
 
   bool hasScanned() override { return has_scanned_; }
 
-  int unpack(const std::vector<uint8_t> & packet) override;
+  int unpack(const std::vector<uint8_t> & packet, bool decode);
+
+  int peek(const std::vector<uint8_t> & packet);
 
   std::tuple<drivers::NebulaPointCloudPtr, double> getPointcloud() override;
 
