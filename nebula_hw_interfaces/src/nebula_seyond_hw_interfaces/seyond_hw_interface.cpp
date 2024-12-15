@@ -1,6 +1,7 @@
 #include "nebula_hw_interfaces/nebula_hw_interfaces_seyond/seyond_hw_interface.hpp"
 
 #include <sstream>
+#include <string>
 
 namespace nebula
 {
@@ -286,6 +287,38 @@ Status SeyondHwInterface::CheckAndSetConfig()
   }
 
   return Status::OK;
+}
+
+std::string SeyondHwInterface::GetLidarCalibrationString()
+{
+  auto calibration_string_ctx = std::make_shared<boost::asio::io_context>(1);
+  auto calibration_string_http_driver = std::unique_ptr<::drivers::tcp_driver::HttpClientDriver>(
+    new ::drivers::tcp_driver::HttpClientDriver(calibration_string_ctx));
+
+  // Initialize stream starter which communicate with the device via HTTP
+  try {
+    calibration_string_http_driver->init_client(
+      sensor_configuration_->sensor_ip, SeyondHttpCommandPort);
+  } catch (const std::exception & ex) {
+    std::stringstream ss;
+    ss << "SeyondHwInterface::SensorInterfaceStart (init HTTP): " << Status::HTTP_CONNECTION_ERROR
+       << std::endl;
+    PrintError(ss.str());
+    return nullptr;
+  }
+
+  std::string result;
+
+  // Only meaningful if it's a RobinW that we are dealing with
+  if (sensor_configuration_->sensor_model == SensorModel::SEYOND_ROBIN_W) {
+    std::string http_command = "/command/?get_anglehv_table";
+    result = calibration_string_http_driver->get(http_command);
+  } else {
+    PrintError("Invalid sensor model was specified, can not download calibration string");
+    result = nullptr;
+  }
+  calibration_string_http_driver->client()->close();
+  return result;
 }
 
 }  // namespace drivers
