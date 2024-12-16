@@ -44,6 +44,9 @@ public:
   nebula::Status Status();
 
 private:
+
+  get_calibration_result_t GetCalibrationData();
+
   void PublishCloud(
     std::unique_ptr<sensor_msgs::msg::PointCloud2> pointcloud,
     const rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr & publisher);
