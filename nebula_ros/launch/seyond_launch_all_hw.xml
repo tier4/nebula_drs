@@ -15,6 +15,7 @@
     <arg name="setup_sensor" default="True" description="Enable sensor setup on hw-driver"/>
     <arg name="retry_hw" default="True" description="hw driver startup retry (false when using pcap)"/>
     <arg name="debug_logging" default="False" description="Launches Monitor/HW Interfaces and calibration acquisition"/>
+    <arg name="calibration_file_path" default="$(find-pkg-share nebula_decoders)/calibration/seyond/$(var sensor_model).txt"/>
 
     <let name="debug_level" value="debug" if="$(eval $(var debug_logging))"/>
     <let name="debug_level" value="info" unless="$(eval $(var debug_logging))"/>
@@ -35,5 +36,6 @@
         <param name="ptp_profile" value="$(var ptp_profile)"/>
         <param name="ptp_transport_type" value="$(var ptp_transport_type)"/>
         <param name="ptp_switch_type" value="$(var ptp_switch_type)"/>
+        <param name="calibration_file_path" value="$(var calibration_file_path)"/>
     </node>
 </launch>

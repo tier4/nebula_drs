@@ -20,7 +20,9 @@ SeyondDecoderWrapper::SeyondDecoderWrapper(
   }
 
   if (config->sensor_model == drivers::SensorModel::SEYOND_ROBIN_W) {
-    auto calibration_result = GetCalibrationData();
+    calibration_file_path_ =
+      parent_node->declare_parameter<std::string>("calibration_file_path", param_read_write());
+    auto calibration_result = GetCalibrationData(calibration_file_path_);
     if (!calibration_result.has_value()) {
       throw std::runtime_error("No valid calibration found");
     }
@@ -72,133 +74,142 @@ void SeyondDecoderWrapper::OnConfigChange(
   sensor_cfg_ = new_config;
 }
 
-SeyondDecoderWrapper::get_calibration_result_t SeyondDecoderWrapper::GetCalibrationData()
+SeyondDecoderWrapper::get_calibration_result_t SeyondDecoderWrapper::GetCalibrationData(
+  const std::string & calibration_file_path)
 {
   std::shared_ptr<drivers::SeyondCalibrationConfigurationBase> calib;
   calib = std::make_shared<drivers::SeyondCalibrationConfiguration>();
 
   bool hw_connected = hw_interface_ != nullptr;
-  std::string calibration_file_path_from_sensor = "calibration_file.txt";
 
   // If a sensor is connected, try to download and save its calibration data
   if (hw_connected) {
     try {
       auto calibration_data = hw_interface_->GetLidarCalibrationString();
 
-      RCLCPP_INFO(logger_, "Downloaded calibration data from sensor.");
+      RCLCPP_INFO(logger_, "Downloading calibration data from sensor.");
       auto status = calib->LoadFromString(calibration_data);
       if (status != Status::OK) {
-        RCLCPP_ERROR_STREAM(logger_, "Could not read calibration data: " << status_);
+        RCLCPP_ERROR_STREAM(logger_, "Could not download calibration data: " << status_);
       } else {
-        status = calib->SaveToFile(calibration_file_path_from_sensor);
+        status = calib->SaveToFile(calibration_file_path);
         if (status != Status::OK) {
-          RCLCPP_INFO_STREAM(
-            logger_, "Could not save calibration data to " << calibration_file_path_from_sensor);
+          RCLCPP_ERROR_STREAM(
+            logger_, "Could not save calibration data to " << calibration_file_path);
         } else {
           RCLCPP_INFO_STREAM(
-            logger_,
-            "Read calibration data from sensor, saved to " << calibration_file_path_from_sensor);
+            logger_, "Read calibration data from sensor, saved to " << calibration_file_path);
         }
       }
     } catch (std::runtime_error & e) {
       RCLCPP_ERROR_STREAM(logger_, "Could not download calibration data: " << e.what());
     }
+    // Otherwise read from the provided file
   } else {
-    RCLCPP_INFO_STREAM(logger_, "No sensor connected, calibration data will not be downloaded");
+    try {
+      RCLCPP_INFO(logger_, "Reading calibration from file.");
+      auto status = calib->LoadFromFile(calibration_file_path);
+      if (status != Status::OK) {
+        RCLCPP_ERROR_STREAM(logger_, "Could not read calibration data: " << status_);
+      } else {
+        RCLCPP_INFO_STREAM(logger_, "Read calibration data from " << calibration_file_path);
+      }
+    } catch (std::runtime_error & e) {
+      RCLCPP_ERROR_STREAM(logger_, "Could not read calibration data from file: " << e.what());
+    }
+    return calib;
   }
-  // TODO: add file handling for saving calibration string to file
-  return calib;
 }
 
-void SeyondDecoderWrapper::ProcessCloudPacket(
-  std::unique_ptr<nebula_msgs::msg::NebulaPacket> packet_msg)
-{
-  bool publish_packets =
-    hw_interface_ && (packets_pub_->get_subscription_count() > 0 ||
-                      packets_pub_->get_intra_process_subscription_count() > 0);
-  bool has_scanned = false;
+  void SeyondDecoderWrapper::ProcessCloudPacket(
+    std::unique_ptr<nebula_msgs::msg::NebulaPacket> packet_msg)
+  {
+    bool publish_packets =
+      hw_interface_ && (packets_pub_->get_subscription_count() > 0 ||
+                        packets_pub_->get_intra_process_subscription_count() > 0);
+    bool has_scanned = false;
 
-  // ////////////////////////////////////////
-  // Decode packet
-  // ////////////////////////////////////////
+    // ////////////////////////////////////////
+    // Decode packet
+    // ////////////////////////////////////////
 
-  if (decode_) {
-    std::tuple<nebula::drivers::NebulaPointCloudPtr, double> pointcloud_ts{};
-    nebula::drivers::NebulaPointCloudPtr pointcloud = nullptr;
-    {
-      std::lock_guard lock(mtx_driver_ptr_);
-      pointcloud_ts = driver_ptr_->ParseCloudPacket(packet_msg->data);
-      pointcloud = std::get<0>(pointcloud_ts);
-    }
+    if (decode_) {
+      std::tuple<nebula::drivers::NebulaPointCloudPtr, double> pointcloud_ts{};
+      nebula::drivers::NebulaPointCloudPtr pointcloud = nullptr;
+      {
+        std::lock_guard lock(mtx_driver_ptr_);
+        pointcloud_ts = driver_ptr_->ParseCloudPacket(packet_msg->data);
+        pointcloud = std::get<0>(pointcloud_ts);
+      }
 
-    if (pointcloud != nullptr) {
-      // ////////////////////////////////////////
-      // If scan completed, publish pointcloud
-      // ////////////////////////////////////////
+      if (pointcloud != nullptr) {
+        // ////////////////////////////////////////
+        // If scan completed, publish pointcloud
+        // ////////////////////////////////////////
 
-      // A pointcloud has been produced, reset the watchdog timer
-      has_scanned = true;
-      if (
-        nebula_points_pub_->get_subscription_count() > 0 ||
-        nebula_points_pub_->get_intra_process_subscription_count() > 0) {
-        auto ros_pc_msg_ptr = std::make_unique<sensor_msgs::msg::PointCloud2>();
-        pcl::toROSMsg(*pointcloud, *ros_pc_msg_ptr);
-        auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                             std::chrono::duration<double>(std::get<1>(pointcloud_ts)))
-                             .count();
-        ros_pc_msg_ptr->header.stamp = rclcpp::Time(nanoseconds);
-        PublishCloud(std::move(ros_pc_msg_ptr), nebula_points_pub_);
+        // A pointcloud has been produced, reset the watchdog timer
+        has_scanned = true;
+        if (
+          nebula_points_pub_->get_subscription_count() > 0 ||
+          nebula_points_pub_->get_intra_process_subscription_count() > 0) {
+          auto ros_pc_msg_ptr = std::make_unique<sensor_msgs::msg::PointCloud2>();
+          pcl::toROSMsg(*pointcloud, *ros_pc_msg_ptr);
+          auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                               std::chrono::duration<double>(std::get<1>(pointcloud_ts)))
+                               .count();
+          ros_pc_msg_ptr->header.stamp = rclcpp::Time(nanoseconds);
+          PublishCloud(std::move(ros_pc_msg_ptr), nebula_points_pub_);
+        }
+      }
+    } else {
+      {
+        std::lock_guard lock(mtx_driver_ptr_);
+        has_scanned = driver_ptr_->PeekCloudPacket(packet_msg->data);
       }
     }
-  } else {
-    {
-      std::lock_guard lock(mtx_driver_ptr_);
-      has_scanned = driver_ptr_->PeekCloudPacket(packet_msg->data);
+
+    if (has_scanned && publish_packets) {
+      // Publish scan message only if it has been written to
+      if (current_scan_msg_ && !current_scan_msg_->packets.empty()) {
+        packets_pub_->publish(std::move(current_scan_msg_));
+        current_scan_msg_ = std::make_unique<nebula_msgs::msg::NebulaPackets>();
+      }
     }
-  }
 
-  if (has_scanned && publish_packets) {
-    // Publish scan message only if it has been written to
-    if (current_scan_msg_ && !current_scan_msg_->packets.empty()) {
-      packets_pub_->publish(std::move(current_scan_msg_));
-      current_scan_msg_ = std::make_unique<nebula_msgs::msg::NebulaPackets>();
+    // ////////////////////////////////////////
+    // Accumulate packets for recording
+    // ////////////////////////////////////////
+
+    // Accumulate packets for recording only if someone is subscribed to the topic (for performance)
+    if (publish_packets) {
+      if (current_scan_msg_->packets.size() == 0) {
+        current_scan_msg_->header.stamp = packet_msg->stamp;
+      }
+      current_scan_msg_->packets.emplace_back(*packet_msg);
     }
+    if (has_scanned) cloud_watchdog_->update();
   }
 
-  // ////////////////////////////////////////
-  // Accumulate packets for recording
-  // ////////////////////////////////////////
-
-  // Accumulate packets for recording only if someone is subscribed to the topic (for performance)
-  if (publish_packets) {
-    if (current_scan_msg_->packets.size() == 0) {
-      current_scan_msg_->header.stamp = packet_msg->stamp;
+  void SeyondDecoderWrapper::PublishCloud(
+    std::unique_ptr<sensor_msgs::msg::PointCloud2> pointcloud,
+    const rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr & publisher)
+  {
+    if (pointcloud->header.stamp.sec < 0) {
+      RCLCPP_WARN_STREAM(logger_, "Timestamp error, verify clock source.");
     }
-    current_scan_msg_->packets.emplace_back(*packet_msg);
-  }
-  if (has_scanned) cloud_watchdog_->update();
-}
-
-void SeyondDecoderWrapper::PublishCloud(
-  std::unique_ptr<sensor_msgs::msg::PointCloud2> pointcloud,
-  const rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr & publisher)
-{
-  if (pointcloud->header.stamp.sec < 0) {
-    RCLCPP_WARN_STREAM(logger_, "Timestamp error, verify clock source.");
-  }
-  pointcloud->header.frame_id = sensor_cfg_->frame_id;
-  publisher->publish(std::move(pointcloud));
-}
-
-nebula::Status SeyondDecoderWrapper::Status()
-{
-  std::lock_guard lock(mtx_driver_ptr_);
-
-  if (!driver_ptr_) {
-    return nebula::Status::NOT_INITIALIZED;
+    pointcloud->header.frame_id = sensor_cfg_->frame_id;
+    publisher->publish(std::move(pointcloud));
   }
 
-  return driver_ptr_->GetStatus();
-}
+  nebula::Status SeyondDecoderWrapper::Status()
+  {
+    std::lock_guard lock(mtx_driver_ptr_);
+
+    if (!driver_ptr_) {
+      return nebula::Status::NOT_INITIALIZED;
+    }
+
+    return driver_ptr_->GetStatus();
+  }
 }  // namespace ros
 }  // namespace nebula

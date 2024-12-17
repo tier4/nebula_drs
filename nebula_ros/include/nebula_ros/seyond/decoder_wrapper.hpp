@@ -45,7 +45,7 @@ public:
 
 private:
 
-  get_calibration_result_t GetCalibrationData();
+  get_calibration_result_t GetCalibrationData(const std::string & calibration_file_path);
 
   void PublishCloud(
     std::unique_ptr<sensor_msgs::msg::PointCloud2> pointcloud,
