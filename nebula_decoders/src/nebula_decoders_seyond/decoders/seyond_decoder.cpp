@@ -1,5 +1,7 @@
 #include "nebula_decoders/nebula_decoders_seyond/decoders/seyond_decoder.hpp"
 
+#include "nebula_decoders/nebula_decoders_seyond/decoders/seyond_packet.hpp"
+
 namespace nebula
 {
 namespace drivers
@@ -49,6 +51,7 @@ SeyondDecoder::SeyondDecoder(
   xyz_from_sphere_.resize(kConvertSize);
   setup_table_(kRadPerSeyondAngleUnit);
   init_f();
+  //std::cout << calibration_configuration_->calibration_data << std::endl;
 }
 
 template <typename PointType>
@@ -147,6 +150,58 @@ void SeyondDecoder::data_packet_parse_(const SeyondDataPacket * pkt)
   output_scan_timestamp_ns_ = pkt->common.ts_start_us * 1000;
 }
 
+void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
+{
+  uint32_t return_number;
+  uint32_t unit_size;
+  if (
+    pkt->multi_return_mode == SEYOND_MULTIPLE_RETURN_MODE_2_STRONGEST ||
+    pkt->multi_return_mode == SEYOND_MULTIPLE_RETURN_MODE_2_STRONGEST_FURTHEST) {
+    unit_size = sizeof(SeyondCoBlock2);
+    return_number = 2;
+  } else if (pkt->multi_return_mode == SEYOND_MULTIPLE_RETURN_MODE_SINGLE) {
+    unit_size = sizeof(SeyondCoBlock1);
+    return_number = 1;
+  } else {
+    RCLCPP_ERROR_STREAM(logger_, "Invalid return mode");
+  }
+
+  const SeyondCoBlock * block = reinterpret_cast<const SeyondCoBlock *>(pkt->payload);
+  for (uint32_t i = 0; i < pkt->item_number;
+       i++, block = reinterpret_cast<const SeyondCoBlock *>(
+              reinterpret_cast<const char *>(block) + unit_size)) {
+        
+    SeyondCoBlockFullAngles full_angles{};
+    get_block_full_angles(&full_angles, block->header, calibration_configuration_->calibration_data.c_str());
+    // reinterpret_cast<const char *>(
+    //   reinterpret_cast<const SeyondAngleHVTable *>(anglehv_table_->payload)->table));
+
+    const uint8_t * channel_mapping = &SeyondDecoder::robinw_channel_mapping[0];
+    const uint32_t tdc_channel_number = SeyondDecoder::RobinWTDCChannelNumber;
+
+    for (uint32_t channel = 0; channel < kSeyondCompactChannelNumber; channel++) {
+      for (uint32_t m = 0; m < return_number; m++) {
+        const SeyondCoChannelPoint & pt =
+          block->points[channel + (m << kSeyondCompactChannelNumberBit)];
+        SeyondXyzrD xyzr;
+        uint32_t scan_id = 0;
+        if (pt.radius > 0 /*&& is_robinw_inside_fov_point(full_angles.angles[channel])*/) {
+          int index = block->header.scan_id * kMaxReceiverInSet + channel;
+          scan_id = channel_mapping[index] + block->header.facet * tdc_channel_number;
+          // get_xyzr_meter(
+          //   full_angles.angles[channel], pt.radius, scan_id, &xyzr);
+
+          //std::cout << full_angles.angles[channel].h_angle << std::endl;
+
+          //       //std::cout << "Point:" << xyzr.x << "," << xyzr.y << "," << xyzr.z << std::endl;
+        }
+      }
+    }
+  }
+
+  output_scan_timestamp_ns_ = pkt->common.ts_start_us * 1000;
+}
+
 int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
 {
   std::vector<uint8_t> packet_copy = packet;
@@ -158,6 +213,7 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
 
   uint64_t packet_id = 0;
   std::memcpy(&packet_id, &packet_copy[kSeyondPktIdSection], kSeyondPktIdLength);
+  // std::cout << "Packet ID: " << packet_id << std::endl;
   if (current_packet_id_ == 0) {
     current_packet_id_ = packet_id;
     std::cout << "First packet received" << std::endl;
@@ -173,7 +229,7 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
   if (current_packet_id_ != packet_id) {
     // std::cout << "Old packet ID: " << current_packet_id_ << ", New packet ID: " << packet_id <<
     // " No. points: " << decode_pc_->size() << std::endl;
-    if ((current_packet_id_ < packet_id) || (packet_id == 0)) {      
+    if ((current_packet_id_ < packet_id) || (packet_id == 0)) {
       if (decode) {
         std::swap(decode_pc_, output_pc_);
         decode_pc_->clear();
@@ -188,10 +244,12 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
   if (decode) {
     const SeyondDataPacket * seyond_pkt =
       reinterpret_cast<const SeyondDataPacket *>(reinterpret_cast<const char *>(&packet_copy[0]));
+    // std::cout << "Packet type: " << seyond_pkt->type << std::endl;
     if (is_sphere_data(seyond_pkt->type)) {
       // convert sphere to xyz
       bool ret_val = convert_to_xyz_pointcloud(
-        *seyond_pkt, reinterpret_cast<SeyondDataPacket *>(&xyz_from_sphere_[0]), kConvertSize, false);
+        *seyond_pkt, reinterpret_cast<SeyondDataPacket *>(&xyz_from_sphere_[0]), kConvertSize,
+        false);
       if (!ret_val) {
         RCLCPP_ERROR_STREAM(logger_, "convert_to_xyz_pointcloud failed");
         return -1;
@@ -199,17 +257,22 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
       data_packet_parse_(reinterpret_cast<SeyondDataPacket *>(&xyz_from_sphere_[0]));
     } else if (is_xyz_data(seyond_pkt->type)) {
       data_packet_parse_(seyond_pkt);
+    } else if (is_robinw_compact_data(seyond_pkt->type)) {
+      RCLCPP_INFO_STREAM(logger_, "Got here 1");
+      compact_data_packet_parse_(seyond_pkt);
+    } else if (is_anglehv_table(seyond_pkt->type) && (anglehv_table_ == nullptr)) {
+      anglehv_table_ = reinterpret_cast<const SeyondAngleHVTable *>(
+        reinterpret_cast<const char *>(seyond_pkt) + sizeof(SeyondDataPacket));
     } else {
       RCLCPP_ERROR_STREAM(logger_, "cframe type" << seyond_pkt->type << "is not supported");
     }
-
     decode_scan_timestamp_ns_ = seyond_pkt->common.ts_start_us * 1000;
 
     if (has_scanned_) {
       output_scan_timestamp_ns_ = decode_scan_timestamp_ns_;
     }
+    return 0;
   }
-  return 0;
 }
 
 std::tuple<drivers::NebulaPointCloudPtr, double> SeyondDecoder::getPointcloud()
@@ -317,47 +380,50 @@ void SeyondDecoder::get_xyzr_meter(
   const SeyondBlockAngles angles, const uint32_t radius_unit, const uint32_t channel,
   SeyondXyzrD * result, SeyondItemType type)
 {
-  if (type == SEYOND_ITEM_TYPE_SPHERE_POINTCLOUD) {
-    result->radius = radius_unit * kMeterPerSeyondDistanceUnit200;
-  } else {
-    result->radius = radius_unit * kMeterPerSeyondDistanceUnit400;
-  }
-  double t;
-  if (angles.v_angle >= 0) {
-    t = result->radius * lookup_cos_table_in_unit(angles.v_angle);
-    result->x = result->radius * lookup_sin_table_in_unit(angles.v_angle);
-  } else {
-    t = result->radius * lookup_cos_table_in_unit(-angles.v_angle);
-    result->x = -result->radius * lookup_sin_table_in_unit(-angles.v_angle);
-  }
-  if (angles.h_angle >= 0) {
-    result->y = t * lookup_sin_table_in_unit(angles.h_angle);
-    result->z = t * lookup_cos_table_in_unit(angles.h_angle);
-  } else {
-    result->y = -t * lookup_sin_table_in_unit(-angles.h_angle);
-    result->z = t * lookup_cos_table_in_unit(-angles.h_angle);
-  }
+  // if (type == SEYOND_ITEM_TYPE_SPHERE_POINTCLOUD) {
+  //   result->radius = radius_unit * kMeterPerSeyondDistanceUnit200;
+
+  // } else {
+  //   result->radius = radius_unit * kMeterPerSeyondDistanceUnit400;
+  // }
+  // double t;
+  // if (angles.v_angle >= 0) {
+  //   t = result->radius * lookup_cos_table_in_unit(angles.v_angle);
+  //   result->x = result->radius * lookup_sin_table_in_unit(angles.v_angle);
+  // } else {
+  //   t = result->radius * lookup_cos_table_in_unit(-angles.v_angle);
+  //   result->x = -result->radius * lookup_sin_table_in_unit(-angles.v_angle);
+  // }
+  // if (angles.h_angle >= 0) {
+  //   result->y = t * lookup_sin_table_in_unit(angles.h_angle);
+  //   result->z = t * lookup_cos_table_in_unit(angles.h_angle);
+  // } else {
+  //   result->y = -t * lookup_sin_table_in_unit(-angles.h_angle);
+  //   result->z = t * lookup_cos_table_in_unit(-angles.h_angle);
+  // }
 
   // don't do nps for robinE, no data yet
-  if (type == SEYOND_ROBINE_ITEM_TYPE_SPHERE_POINTCLOUD) {
-    return;
-  }
+  // if (type == SEYOND_ROBINE_ITEM_TYPE_SPHERE_POINTCLOUD) {
+  //   return;
+  // }
 
   // falconI & falconII
-  if (
-    type == SEYOND_ITEM_TYPE_SPHERE_POINTCLOUD ||
-    type == SEYOND_FALCONII_DOT_1_ITEM_TYPE_SPHERE_POINTCLOUD) {
-    double x_adj, z_adj;
-    lookup_xz_adjustment_(angles, channel, &x_adj, &z_adj);
-    result->x += x_adj;
-    result->z += z_adj;
-  } else if (type == SEYOND_ROBINW_ITEM_TYPE_SPHERE_POINTCLOUD) {
-    double adj[3];
-    lookup_xyz_adjustment_(angles, channel, adj);
-    result->x += adj[0];
-    result->y += adj[1];
-    result->z += adj[2];
-  }
+  // if (
+  //   type == SEYOND_ITEM_TYPE_SPHERE_POINTCLOUD ||
+  //   type == SEYOND_FALCONII_DOT_1_ITEM_TYPE_SPHERE_POINTCLOUD) {
+  //   double x_adj, z_adj;
+  //   lookup_xz_adjustment_(angles, channel, &x_adj, &z_adj);
+  //   result->x += x_adj;
+  //   result->z += z_adj;
+  // } else if (
+  //   type == SEYOND_ROBINW_ITEM_TYPE_SPHERE_POINTCLOUD ||
+  //   type == SEYOND_ROBINW_ITEM_TYPE_COMPACT_POINTCLOUD) {
+  //   double adj[3];
+  //   lookup_xyz_adjustment_(angles, channel, adj);
+  //   result->x += adj[0];
+  //   result->y += adj[1];
+  //   result->z += adj[2];
+  // }
 
   return;
 }
@@ -507,7 +573,9 @@ bool SeyondDecoder::convert_to_xyz_pointcloud(
       return false;
     }
     memcpy(dest, &src, sizeof(SeyondDataPacket));
-    if (src.type == SEYOND_ITEM_TYPE_SPHERE_POINTCLOUD) {
+    if (
+      src.type == SEYOND_ITEM_TYPE_SPHERE_POINTCLOUD ||
+      SEYOND_ROBINW_ITEM_TYPE_COMPACT_POINTCLOUD) {
       dest->type = SEYOND_ITEM_TYPE_XYZ_POINTCLOUD;
       dest->item_size = sizeof(SeyondXyzPoint);
     } else {
@@ -549,6 +617,30 @@ bool SeyondDecoder::convert_to_xyz_pointcloud(
             }
           }
         });
+    } else if (src.type == SEYOND_ROBINW_ITEM_TYPE_COMPACT_POINTCLOUD) {
+      // (void)iterate_seyond_data_packet_co_cpoints<
+      //   SeyondCoBlock, SeyondCoBlockHeader, SeyondCoBlock1, SeyondCoBlock2,
+      //   SeyondCoChannelPoint>( src,
+      //   [&](
+      //     const SeyondDataPacketCoPointsCallbackParams<SeyondCoBlock, SeyondCoChannelPoint> &
+      //     in_params) { if (in_params.pt.radius > 0) {
+      //       SeyondXyzPoint & ipt = dest->xyz_points[dest->item_number];
+      //       required_size += static_cast<uint32_t>(sizeof(SeyondXyzPoint));
+      //       if (required_size > dest_size) {
+      //         std::cerr << "no enough size required_size:" << required_size
+      //                   << ",dest_size:" << dest_size << std::endl;
+      //       } else {
+      //         (void)get_xyz_point(
+      //           in_params.block.header, in_params.pt, in_params.angle.angles[in_params.channel],
+      //           in_params.channel, &ipt);
+      //         ipt.multi_return = in_params.multi_return;
+      //         ipt.is_2nd_return = in_params.pt.is_2nd_return;
+      //         ipt.ts_10us += time_adjust_10us;
+      //         dest->item_number++;
+      //       }
+      //     }
+      //   },
+      //   "fixme");
     } else {
       (void)iterate_seyond_data_packet_cpoints<
         SeyondEnBlock, SeyondEnBlockHeader, SeyondEnBlock1, SeyondEnBlock2, SeyondEnChannelPoint>(

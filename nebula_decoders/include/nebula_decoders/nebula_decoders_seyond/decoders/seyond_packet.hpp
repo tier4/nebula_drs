@@ -171,7 +171,7 @@ static const int kEncoderTableStep = 1 << kEncoderTableShift;
 static const int kEncoderTableMask = kEncoderTableStep - 1;
 static const int kPolygonTableSize = ((kPolygonMaxAngle - kPolygonMinAngle) >> kEncoderTableShift) + 1;
 static const int kMaxSet = 6;
-static const int kMaxReceiverInSet = kSeyondCompactChannelNumber;
+static const uint32_t kMaxReceiverInSet = kSeyondCompactChannelNumber;
 
 static const int kSeyondBaseFaultEnd = 64;
 static const double kSeyondNopROI = 10000.0;

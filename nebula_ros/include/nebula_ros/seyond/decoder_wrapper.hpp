@@ -30,7 +30,7 @@ using get_calibration_result_t =
 class SeyondDecoderWrapper
 {
   using get_calibration_result_t = nebula::util::expected<
-    std::shared_ptr<drivers::SeyondCalibrationConfigurationBase>, nebula::Status>;
+    std::shared_ptr<drivers::SeyondCalibrationConfiguration>, nebula::Status>;
 
 public:
   SeyondDecoderWrapper(

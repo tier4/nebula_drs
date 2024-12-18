@@ -27,6 +27,7 @@ SeyondDecoderWrapper::SeyondDecoderWrapper(
       throw std::runtime_error("No valid calibration found");
     }
     auto calibration_cfg_ptr_ = calibration_result.value();
+    //std::cout << calibration_configuration_->calibration_data << std::endl;
   }
 
   RCLCPP_INFO(logger_, "Starting Decoder");
@@ -77,7 +78,7 @@ void SeyondDecoderWrapper::OnConfigChange(
 SeyondDecoderWrapper::get_calibration_result_t SeyondDecoderWrapper::GetCalibrationData(
   const std::string & calibration_file_path)
 {
-  std::shared_ptr<drivers::SeyondCalibrationConfigurationBase> calib;
+  std::shared_ptr<drivers::SeyondCalibrationConfiguration> calib;
   calib = std::make_shared<drivers::SeyondCalibrationConfiguration>();
 
   bool hw_connected = hw_interface_ != nullptr;
@@ -121,95 +122,95 @@ SeyondDecoderWrapper::get_calibration_result_t SeyondDecoderWrapper::GetCalibrat
   }
 }
 
-  void SeyondDecoderWrapper::ProcessCloudPacket(
-    std::unique_ptr<nebula_msgs::msg::NebulaPacket> packet_msg)
-  {
-    bool publish_packets =
-      hw_interface_ && (packets_pub_->get_subscription_count() > 0 ||
-                        packets_pub_->get_intra_process_subscription_count() > 0);
-    bool has_scanned = false;
+void SeyondDecoderWrapper::ProcessCloudPacket(
+  std::unique_ptr<nebula_msgs::msg::NebulaPacket> packet_msg)
+{
+  bool publish_packets =
+    hw_interface_ && (packets_pub_->get_subscription_count() > 0 ||
+                      packets_pub_->get_intra_process_subscription_count() > 0);
+  bool has_scanned = false;
 
-    // ////////////////////////////////////////
-    // Decode packet
-    // ////////////////////////////////////////
+  // ////////////////////////////////////////
+  // Decode packet
+  // ////////////////////////////////////////
 
-    if (decode_) {
-      std::tuple<nebula::drivers::NebulaPointCloudPtr, double> pointcloud_ts{};
-      nebula::drivers::NebulaPointCloudPtr pointcloud = nullptr;
-      {
-        std::lock_guard lock(mtx_driver_ptr_);
-        pointcloud_ts = driver_ptr_->ParseCloudPacket(packet_msg->data);
-        pointcloud = std::get<0>(pointcloud_ts);
-      }
-
-      if (pointcloud != nullptr) {
-        // ////////////////////////////////////////
-        // If scan completed, publish pointcloud
-        // ////////////////////////////////////////
-
-        // A pointcloud has been produced, reset the watchdog timer
-        has_scanned = true;
-        if (
-          nebula_points_pub_->get_subscription_count() > 0 ||
-          nebula_points_pub_->get_intra_process_subscription_count() > 0) {
-          auto ros_pc_msg_ptr = std::make_unique<sensor_msgs::msg::PointCloud2>();
-          pcl::toROSMsg(*pointcloud, *ros_pc_msg_ptr);
-          auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                               std::chrono::duration<double>(std::get<1>(pointcloud_ts)))
-                               .count();
-          ros_pc_msg_ptr->header.stamp = rclcpp::Time(nanoseconds);
-          PublishCloud(std::move(ros_pc_msg_ptr), nebula_points_pub_);
-        }
-      }
-    } else {
-      {
-        std::lock_guard lock(mtx_driver_ptr_);
-        has_scanned = driver_ptr_->PeekCloudPacket(packet_msg->data);
-      }
+  if (decode_) {
+    std::tuple<nebula::drivers::NebulaPointCloudPtr, double> pointcloud_ts{};
+    nebula::drivers::NebulaPointCloudPtr pointcloud = nullptr;
+    {
+      std::lock_guard lock(mtx_driver_ptr_);
+      pointcloud_ts = driver_ptr_->ParseCloudPacket(packet_msg->data);
+      pointcloud = std::get<0>(pointcloud_ts);
     }
 
-    if (has_scanned && publish_packets) {
-      // Publish scan message only if it has been written to
-      if (current_scan_msg_ && !current_scan_msg_->packets.empty()) {
-        packets_pub_->publish(std::move(current_scan_msg_));
-        current_scan_msg_ = std::make_unique<nebula_msgs::msg::NebulaPackets>();
+    if (pointcloud != nullptr) {
+      // ////////////////////////////////////////
+      // If scan completed, publish pointcloud
+      // ////////////////////////////////////////
+
+      // A pointcloud has been produced, reset the watchdog timer
+      has_scanned = true;
+      if (
+        nebula_points_pub_->get_subscription_count() > 0 ||
+        nebula_points_pub_->get_intra_process_subscription_count() > 0) {
+        auto ros_pc_msg_ptr = std::make_unique<sensor_msgs::msg::PointCloud2>();
+        pcl::toROSMsg(*pointcloud, *ros_pc_msg_ptr);
+        auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                             std::chrono::duration<double>(std::get<1>(pointcloud_ts)))
+                             .count();
+        ros_pc_msg_ptr->header.stamp = rclcpp::Time(nanoseconds);
+        PublishCloud(std::move(ros_pc_msg_ptr), nebula_points_pub_);
       }
     }
-
-    // ////////////////////////////////////////
-    // Accumulate packets for recording
-    // ////////////////////////////////////////
-
-    // Accumulate packets for recording only if someone is subscribed to the topic (for performance)
-    if (publish_packets) {
-      if (current_scan_msg_->packets.size() == 0) {
-        current_scan_msg_->header.stamp = packet_msg->stamp;
-      }
-      current_scan_msg_->packets.emplace_back(*packet_msg);
+  } else {
+    {
+      std::lock_guard lock(mtx_driver_ptr_);
+      has_scanned = driver_ptr_->PeekCloudPacket(packet_msg->data);
     }
-    if (has_scanned) cloud_watchdog_->update();
   }
 
-  void SeyondDecoderWrapper::PublishCloud(
-    std::unique_ptr<sensor_msgs::msg::PointCloud2> pointcloud,
-    const rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr & publisher)
-  {
-    if (pointcloud->header.stamp.sec < 0) {
-      RCLCPP_WARN_STREAM(logger_, "Timestamp error, verify clock source.");
+  if (has_scanned && publish_packets) {
+    // Publish scan message only if it has been written to
+    if (current_scan_msg_ && !current_scan_msg_->packets.empty()) {
+      packets_pub_->publish(std::move(current_scan_msg_));
+      current_scan_msg_ = std::make_unique<nebula_msgs::msg::NebulaPackets>();
     }
-    pointcloud->header.frame_id = sensor_cfg_->frame_id;
-    publisher->publish(std::move(pointcloud));
   }
 
-  nebula::Status SeyondDecoderWrapper::Status()
-  {
-    std::lock_guard lock(mtx_driver_ptr_);
+  // ////////////////////////////////////////
+  // Accumulate packets for recording
+  // ////////////////////////////////////////
 
-    if (!driver_ptr_) {
-      return nebula::Status::NOT_INITIALIZED;
+  // Accumulate packets for recording only if someone is subscribed to the topic (for performance)
+  if (publish_packets) {
+    if (current_scan_msg_->packets.size() == 0) {
+      current_scan_msg_->header.stamp = packet_msg->stamp;
     }
-
-    return driver_ptr_->GetStatus();
+    current_scan_msg_->packets.emplace_back(*packet_msg);
   }
+  if (has_scanned) cloud_watchdog_->update();
+}
+
+void SeyondDecoderWrapper::PublishCloud(
+  std::unique_ptr<sensor_msgs::msg::PointCloud2> pointcloud,
+  const rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr & publisher)
+{
+  if (pointcloud->header.stamp.sec < 0) {
+    RCLCPP_WARN_STREAM(logger_, "Timestamp error, verify clock source.");
+  }
+  pointcloud->header.frame_id = sensor_cfg_->frame_id;
+  publisher->publish(std::move(pointcloud));
+}
+
+nebula::Status SeyondDecoderWrapper::Status()
+{
+  std::lock_guard lock(mtx_driver_ptr_);
+
+  if (!driver_ptr_) {
+    return nebula::Status::NOT_INITIALIZED;
+  }
+
+  return driver_ptr_->GetStatus();
+}
 }  // namespace ros
 }  // namespace nebula

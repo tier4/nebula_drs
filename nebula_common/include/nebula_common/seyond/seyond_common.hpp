@@ -52,6 +52,7 @@ struct SeyondCalibrationConfigurationBase : public CalibrationConfigurationBase
   virtual nebula::Status LoadFromFile(const std::string & calibration_file) = 0;
   virtual nebula::Status LoadFromString(const std::string & calibration_content) = 0;
   virtual nebula::Status SaveToFile(const std::string & calibration_file) = 0;
+  virtual std::string GetCalibrationString() const = 0;
 };
 
 /// @brief struct for Seyond calibration configuration
@@ -94,6 +95,11 @@ struct SeyondCalibrationConfiguration : public SeyondCalibrationConfigurationBas
     ofs << calibration_data;
     ofs.close();
     return Status::OK;
+  }
+
+  inline std::string GetCalibrationString() const override
+  {
+    return calibration_data;
   }
 
   /// @brief Saving calibration data from string

@@ -10,6 +10,9 @@
 #include "nebula_msgs/msg/nebula_packet.hpp"
 #include "nebula_msgs/msg/nebula_packets.hpp"
 
+#include <sys/types.h>
+
+#include <cstdint>
 #include <memory>
 #include <tuple>
 #include <vector>
@@ -31,6 +34,11 @@ class SeyondBlockFullAngles
 public:
   SeyondBlockAngles angles[kSeyondChannelNumber];
 };
+class SeyondCoBlockFullAngles
+{
+public:
+  SeyondBlockAngles angles[kMaxReceiverInSet];
+};
 
 template <class Block, class Point>
 class SeyondDataPacketPointsCallbackParams
@@ -40,6 +48,18 @@ public:
   Block block;
   Point pt;
   SeyondBlockFullAngles angle;
+  uint16_t channel;
+  uint16_t multi_return;
+};
+
+template <class Block, class Point>
+class SeyondDataPacketCoPointsCallbackParams
+{
+public:
+  SeyondDataPacket pkt;
+  Block block;
+  Point pt;
+  SeyondCoBlockFullAngles angle;
   uint16_t channel;
   uint16_t multi_return;
 };
@@ -131,7 +151,7 @@ public:
 
   bool hasScanned() override { return has_scanned_; }
 
-  int unpack(const std::vector<uint8_t> & packet, bool decode);
+  int unpack(const std::vector<uint8_t> & packet, bool decode) override;
 
   int peek(const std::vector<uint8_t> & packet);
 
@@ -140,6 +160,16 @@ public:
   static double lookup_cos_table_in_unit(int i);
 
   static double lookup_sin_table_in_unit(int i);
+
+  static inline bool is_anglehv_table(uint32_t packet_type)
+  {
+    SeyondItemType seyond_type = static_cast<SeyondItemType>(packet_type);
+    bool bSuccess = false;
+    if (seyond_type == SEYOND_ROBINW_ITEM_TYPE_ANGLEHV_TABLE) {
+      bSuccess = true;
+    }
+    return bSuccess;
+  }
 
   static inline bool is_xyz_data(uint32_t packet_type)
   {
@@ -164,6 +194,16 @@ public:
       seyond_type == SEYOND_ROBINE_ITEM_TYPE_SPHERE_POINTCLOUD ||
       seyond_type == SEYOND_ROBINW_ITEM_TYPE_SPHERE_POINTCLOUD ||
       seyond_type == SEYOND_FALCONII_DOT_1_ITEM_TYPE_SPHERE_POINTCLOUD) {
+      bSuccess = true;
+    }
+    return bSuccess;
+  }
+
+  static inline bool is_robinw_compact_data(uint32_t packet_type)
+  {
+    SeyondItemType seyond_type = static_cast<SeyondItemType>(packet_type);
+    bool bSuccess = false;
+    if (seyond_type == SEYOND_ROBINW_ITEM_TYPE_COMPACT_POINTCLOUD) {
       bSuccess = true;
     }
     return bSuccess;
@@ -300,6 +340,41 @@ public:
     full->angles[3].v_angle = b.v_angle + b.v_angle_diff_3 + v_angle_offset_[type][3];
   }
 
+  static inline void get_block_full_angles(
+    SeyondCoBlockFullAngles * full, const SeyondCoBlockHeader & b, const char * anglehv_table)
+  {
+    int polygon_mod = b.p_angle;
+    int facet_num = b.facet;
+    int set_num = b.scan_id;
+    int h_offset_total = polygon_mod - kPolygonMinAngle;
+    if (h_offset_total < 0) {
+      h_offset_total = 0;
+    }
+
+    int h_idx = h_offset_total >> kEncoderTableShift;
+    int h_offset = h_offset_total & kEncoderTableMask;
+    int h_offset2 = kEncoderTableStep - h_offset;
+
+    if (h_idx > signed(kPolygonTableSize - 2)) {
+      h_idx = kPolygonTableSize - 2;
+    }
+    using FourDArray = AngleHV(&)[kPolygonMaxFacets][kPolygonTableSize][kMaxSet][kMaxReceiverInSet];
+    FourDArray table = reinterpret_cast<FourDArray>(*const_cast<char *>((anglehv_table)));
+    AngleHV *b1, *b2;
+    b1 = &table[facet_num][h_idx][set_num][0];
+    for (int r = 0; r < kMaxReceiverInSet; r++, b1++) {
+      b2 = b1 + kMaxSet * kMaxReceiverInSet;
+
+      int32_t v;
+      v = b1->h * h_offset2 + b2->h * h_offset;
+      full->angles[r].h_angle = v >> kEncoderTableShift;
+          
+
+      v = b1->v * h_offset2 + b2->v * h_offset;
+      full->angles[r].v_angle = v >> kEncoderTableShift;
+    }
+  }
+
   static bool check_data_packet(const SeyondDataPacket & pkt, size_t size);
 
   static void get_xyzr_meter(
@@ -429,7 +504,23 @@ public:
           pkt, count_callback) == 0) {
         std::cerr << "iterate_seyond_data_packet_cpoints failed" << std::endl;
       }
+      return item_count;
+    } else if (pkt.type == SEYOND_ROBINW_ITEM_TYPE_COMPACT_POINTCLOUD) {
+      uint32_t item_count = 0;
+      auto count_callback =
+        [&](const SeyondDataPacketCoPointsCallbackParams<SeyondCoBlock, SeyondCoChannelPoint> &
+              in_params) {
+          if (in_params.pt.radius > 0) {
+            item_count++;
+          }
+        };
 
+      if (
+        SeyondDecoder::iterate_seyond_data_packet_co_cpoints<
+          SeyondCoBlock, SeyondCoBlockHeader, SeyondCoBlock1, SeyondCoBlock2, SeyondCoChannelPoint>(
+          pkt, count_callback, "fixme") == 0) {
+        std::cerr << "iterate_seyond_data_packet_cpoints failed" << std::endl;
+      }
       return item_count;
     } else if (is_en_sphere_data(pkt.type)) {
       uint32_t item_count = 0;
@@ -504,7 +595,66 @@ public:
     return out_count;
   }
 
+  template <
+    typename Block, typename BlockHeader, typename Block1, typename Block2, typename Point,
+    typename Callback>
+  static uint32_t iterate_seyond_data_packet_co_cpoints(
+    const SeyondDataPacket & in_pkt, Callback in_callback, const char * anglehv_table)
+  {
+    uint32_t out_count{0};
+    uint32_t unit_size{0};
+    uint32_t mr = SeyondDecoder::get_return_times(
+      static_cast<SeyondMultipleReturnMode>(in_pkt.multi_return_mode));
+
+    if (mr == 2) {
+      unit_size = sizeof(Block2);
+    } else if (mr == 1) {
+      unit_size = sizeof(Block1);
+    } else {
+      std::cerr << "return times of return mode " << in_pkt.multi_return_mode << " is " << mr
+                << std::endl;
+    }
+    const Block * block = nullptr;
+    uint32_t tmp_idx = 0;
+    for (; tmp_idx < in_pkt.item_number; tmp_idx++) {
+      if (tmp_idx == 0) {
+        const SeyondCoBlock1 * const block_ptr = &in_pkt.seyond_co_block1s[0];
+        std::memcpy(&block, &block_ptr, sizeof(Block *));
+      } else {
+        int8_t * byte_ptr = nullptr;
+        std::memcpy(&byte_ptr, &block, sizeof(const Block *));
+        byte_ptr =
+          (int8_t *)(uintptr_t)(byte_ptr + static_cast<uint32_t>(sizeof(int8_t)) * unit_size);
+        std::memcpy(&block, &byte_ptr, sizeof(const Block *));
+      }
+      if (block == nullptr) {
+        std::cerr << "bad block" << std::endl;
+      }
+      SeyondCoBlockFullAngles full_angles;
+      if (anglehv_table) {
+        get_block_full_angles(&full_angles, block->header, anglehv_table);
+      }
+      uint32_t ch1 = 0;
+      for (; ch1 < kSeyondChannelNumber; ch1++) {
+        uint32_t m1 = 0;
+        for (; m1 < mr; m1++) {
+          // if (anglehv_table && !is_robinw_inside_fov_point(full_angles.angles[ch1])) {
+          //   continue;
+          // }
+          const Point & pt = block->points[ch1 + (m1 << kSeyondCompactChannelNumberBit)];
+          const SeyondDataPacketCoPointsCallbackParams<Block, Point> in_params{
+            in_pkt, *block, pt, full_angles, static_cast<uint16_t>(ch1), static_cast<uint16_t>(m1)};
+          in_callback(in_params);
+          out_count++;
+        }
+      }
+    }
+    return out_count;
+  }
+
 private:
+  const SeyondAngleHVTable * anglehv_table_ = nullptr;
+
   /// @brief check packet vaild
   /// @param buffer Point Udp Data Buffer
   bool IsPacketValid(const std::vector<uint8_t> & buffer);
@@ -516,6 +666,8 @@ private:
   static bool convert_to_xyz_pointcloud(
     const SeyondDataPacket & src, SeyondDataPacket * dest, size_t dest_size, bool append);
   void data_packet_parse_(const SeyondDataPacket * pkt);
+  void compact_data_packet_parse_(const SeyondDataPacket * pkt);
+
   template <typename PointType>
   void point_xyz_data_parse_(
     bool is_en_data, bool is_use_refl, uint32_t point_num, PointType point_ptr);
