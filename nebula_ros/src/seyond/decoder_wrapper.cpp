@@ -1,5 +1,7 @@
 #include "nebula_ros/seyond/decoder_wrapper.hpp"
 
+#include <cstdint>
+
 namespace nebula
 {
 namespace ros
@@ -28,13 +30,11 @@ SeyondDecoderWrapper::SeyondDecoderWrapper(
     }
     auto calibration_cfg_ptr_ = calibration_result.value();
     driver_ptr_ = std::make_shared<SeyondDriver>(config, calibration_cfg_ptr_);
-  }
-  else {
+  } else {
     driver_ptr_ = std::make_shared<SeyondDriver>(config, calibration_cfg_ptr_);
   }
 
   RCLCPP_INFO(logger_, "Starting Decoder");
-
 
   status_ = driver_ptr_->GetStatus();
 
@@ -87,7 +87,7 @@ SeyondDecoderWrapper::get_calibration_result_t SeyondDecoderWrapper::GetCalibrat
   bool hw_connected = hw_interface_ != nullptr;
 
   // If a sensor is connected, try to download and save its calibration data
-  if (hw_connected) {
+  if (hw_connected && sensor_cfg_->sensor_model == drivers::SensorModel::SEYOND_ROBIN_W) {
     try {
       auto calibration_data = hw_interface_->GetLidarCalibrationString();
 
@@ -188,6 +188,24 @@ void SeyondDecoderWrapper::ProcessCloudPacket(
   if (publish_packets) {
     if (current_scan_msg_->packets.size() == 0) {
       current_scan_msg_->header.stamp = packet_msg->stamp;
+      // Add the calibration packet
+      if (
+        (calibration_cfg_ptr_->GetCalibrationString().length()) &&
+        (sensor_cfg_->sensor_model == drivers::SensorModel::SEYOND_ROBIN_W)) {
+        const auto now = std::chrono::high_resolution_clock::now();
+        const auto timestamp_ns =
+          std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+
+        auto msg_ptr = std::make_unique<nebula_msgs::msg::NebulaPacket>();
+        msg_ptr->stamp.sec = static_cast<int>(timestamp_ns / 1'000'000'000);
+        msg_ptr->stamp.nanosec = static_cast<int>(timestamp_ns % 1'000'000'000);
+        std::string calibration_string = calibration_cfg_ptr_->GetCalibrationString();
+        std::vector<uint8_t> calibration_packet(
+          calibration_string.begin(), calibration_string.end());
+
+        msg_ptr->data.swap(calibration_packet);
+        current_scan_msg_->packets.emplace_back(*msg_ptr);
+      }
     }
     current_scan_msg_->packets.emplace_back(*packet_msg);
   }
