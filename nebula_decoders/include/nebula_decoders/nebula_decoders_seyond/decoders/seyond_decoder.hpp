@@ -368,7 +368,6 @@ public:
       int32_t v;
       v = b1->h * h_offset2 + b2->h * h_offset;
       full->angles[r].h_angle = v >> kEncoderTableShift;
-          
 
       v = b1->v * h_offset2 + b2->v * h_offset;
       full->angles[r].v_angle = v >> kEncoderTableShift;
@@ -653,7 +652,7 @@ public:
   }
 
 private:
-  const SeyondAngleHVTable * anglehv_table_ = nullptr;
+  SeyondDataPacket * anglehv_table_ = nullptr;
 
   /// @brief check packet vaild
   /// @param buffer Point Udp Data Buffer

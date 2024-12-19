@@ -47,22 +47,14 @@ inline std::ostream & operator<<(std::ostream & os, SeyondSensorConfiguration co
   return os;
 }
 
-struct SeyondCalibrationConfigurationBase : public CalibrationConfigurationBase
-{
-  virtual nebula::Status LoadFromFile(const std::string & calibration_file) = 0;
-  virtual nebula::Status LoadFromString(const std::string & calibration_content) = 0;
-  virtual nebula::Status SaveToFile(const std::string & calibration_file) = 0;
-  virtual std::string GetCalibrationString() const = 0;
-};
-
 /// @brief struct for Seyond calibration configuration
-struct SeyondCalibrationConfiguration : public SeyondCalibrationConfigurationBase
+struct SeyondCalibrationConfiguration : public LidarConfigurationBase
 {
   std::map<size_t, float> elev_angle_map;
   std::map<size_t, float> azimuth_offset_map;
   std::string calibration_data;
 
-  inline nebula::Status LoadFromFile(const std::string & calibration_file) override
+  inline nebula::Status LoadFromFile(const std::string & calibration_file)
   {
     std::ifstream ifs(calibration_file);
     if (!ifs) {
@@ -77,7 +69,7 @@ struct SeyondCalibrationConfiguration : public SeyondCalibrationConfigurationBas
   /// @brief Loading calibration data
   /// @param calibration_content
   /// @return Resulting status
-  inline nebula::Status LoadFromString(const std::string & calibration_content) override
+  inline nebula::Status LoadFromString(const std::string & calibration_content)
   {
     calibration_data = calibration_content;
     return Status::OK;
@@ -86,7 +78,7 @@ struct SeyondCalibrationConfiguration : public SeyondCalibrationConfigurationBas
   /// @brief Saving calibration data (not used)
   /// @param calibration_file
   /// @return Resulting status
-  inline nebula::Status SaveToFile(const std::string & calibration_file) override
+  inline nebula::Status SaveToFile(const std::string & calibration_file)
   {
     std::ofstream ofs(calibration_file);
     if (!ofs) {
@@ -97,7 +89,7 @@ struct SeyondCalibrationConfiguration : public SeyondCalibrationConfigurationBas
     return Status::OK;
   }
 
-  inline std::string GetCalibrationString() const override
+  inline std::string GetCalibrationString() const
   {
     return calibration_data;
   }

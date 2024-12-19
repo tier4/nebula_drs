@@ -27,12 +27,15 @@ SeyondDecoderWrapper::SeyondDecoderWrapper(
       throw std::runtime_error("No valid calibration found");
     }
     auto calibration_cfg_ptr_ = calibration_result.value();
-    //std::cout << calibration_configuration_->calibration_data << std::endl;
+    driver_ptr_ = std::make_shared<SeyondDriver>(config, calibration_cfg_ptr_);
+  }
+  else {
+    driver_ptr_ = std::make_shared<SeyondDriver>(config, calibration_cfg_ptr_);
   }
 
   RCLCPP_INFO(logger_, "Starting Decoder");
 
-  driver_ptr_ = std::make_shared<SeyondDriver>(config, calibration_cfg_ptr_);
+
   status_ = driver_ptr_->GetStatus();
 
   if (Status::OK != status_) {
