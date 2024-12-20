@@ -95,7 +95,7 @@ SeyondDecoderWrapper::get_calibration_result_t SeyondDecoderWrapper::GetCalibrat
       auto status = calib->LoadFromString(calibration_data);
       if (status != Status::OK) {
         RCLCPP_ERROR_STREAM(logger_, "Could not download calibration data: " << status_);
-      } else {
+      } else if (calibration_file_path != "") {
         status = calib->SaveToFile(calibration_file_path);
         if (status != Status::OK) {
           RCLCPP_ERROR_STREAM(
@@ -109,7 +109,7 @@ SeyondDecoderWrapper::get_calibration_result_t SeyondDecoderWrapper::GetCalibrat
       RCLCPP_ERROR_STREAM(logger_, "Could not download calibration data: " << e.what());
     }
     // Otherwise read from the provided file
-  } else {
+  } else if (calibration_file_path != "") {
     try {
       RCLCPP_INFO(logger_, "Reading calibration from file.");
       auto status = calib->LoadFromFile(calibration_file_path);
@@ -121,8 +121,8 @@ SeyondDecoderWrapper::get_calibration_result_t SeyondDecoderWrapper::GetCalibrat
     } catch (std::runtime_error & e) {
       RCLCPP_ERROR_STREAM(logger_, "Could not read calibration data from file: " << e.what());
     }
-    return calib;
   }
+  return calib;
 }
 
 void SeyondDecoderWrapper::ProcessCloudPacket(
