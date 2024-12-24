@@ -3,6 +3,7 @@
 #include "nebula_decoders/nebula_decoders_seyond/decoders/seyond_packet.hpp"
 
 #include <cstring>
+#include <iostream>
 
 namespace nebula
 {
@@ -55,42 +56,38 @@ SeyondDecoder::SeyondDecoder(
   init_f();
 
   // TODO: add to functions
-
-  // anglehv_table_ = reinterpret_cast<SeyondDataPacket *>(
-  //   new char[sizeof(SeyondDataPacket) + sizeof(SeyondAngleHVTable)]);
-  // strcpy(reinterpret_cast<char *>(anglehv_table_),
-  // calibration_configuration_->GetCalibrationString().c_str());
-  // anglehv_table_ = reinterpret_cast<SeyondDataPacket
-  // *>(calibration_configuration_->GetCalibrationString().c_str());
   size_t table_packet_size = sizeof(SeyondDataPacket) + sizeof(SeyondAngleHVTable);
   // char * calibration_string = new char[table_packet_size];
   anglehv_table_ = reinterpret_cast<SeyondDataPacket *>(new char[table_packet_size]);
+  memset(anglehv_table_, 0, table_packet_size);
+
   if (calibration_configuration_->GetCalibrationString().length() == table_packet_size) {
-    strcpy(
-      reinterpret_cast<char *>(anglehv_table_),
-      calibration_configuration_->GetCalibrationString().c_str());
+    memcpy(
+      anglehv_table_, calibration_configuration_->GetCalibrationString().c_str(),
+      table_packet_size);
+
     // Copy out the table
-    // AngleHV tmp_table[kPolygonMaxFacets][kPolygonTableSize][kMaxSet][kMaxReceiverInSet];
-    // memcpy(
-    //   tmp_table, reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->table,
-    //   sizeof(tmp_table));
-    // 
-    // anglehv_table_->common.version.magic_number = kSeyondMagicNumberDataPacket;
-    // anglehv_table_->type = SEYOND_ROBINW_ITEM_TYPE_ANGLEHV_TABLE;
-    // anglehv_table_->common.size = sizeof(SeyondAngleHVTable) + sizeof(SeyondDataPacket);
-    // reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->version_number.major_version =
-    //   kSeyondAngleHVTableVersionMajor;
-    // reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->version_number.minor_version =
-    //   kSeyondAngleHVTableVersionMinor;
-    // reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->id = 0;
-    // anglehv_table_->item_number = 1;
-    // anglehv_table_->is_first_sub_frame = 1;
-    // anglehv_table_->is_last_sub_frame = 1;
-    // anglehv_table_->sub_idx = 0;
-    // anglehv_table_->item_size = sizeof(SeyondAngleHVTable);
-    // memcpy(
-    //   reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->table, tmp_table,
-    //   sizeof(tmp_table));
+    AngleHV tmp_table[kPolygonMaxFacets][kPolygonTableSize][kMaxSet][kMaxReceiverInSet];
+    memcpy(
+      tmp_table, reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->table,
+      sizeof(tmp_table));
+
+    anglehv_table_->common.version.magic_number = kSeyondMagicNumberDataPacket;
+    anglehv_table_->type = SEYOND_ROBINW_ITEM_TYPE_ANGLEHV_TABLE;
+    anglehv_table_->common.size = sizeof(SeyondAngleHVTable) + sizeof(SeyondDataPacket);
+    reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->version_number.major_version =
+      kSeyondAngleHVTableVersionMajor;
+    reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->version_number.minor_version =
+      kSeyondAngleHVTableVersionMinor;
+    reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->id = 0;
+    anglehv_table_->item_number = 1;
+    anglehv_table_->is_first_sub_frame = 1;
+    anglehv_table_->is_last_sub_frame = 1;
+    anglehv_table_->sub_idx = 0;
+    anglehv_table_->item_size = sizeof(SeyondAngleHVTable);
+    memcpy(
+      reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->table, tmp_table,
+      sizeof(tmp_table));
   } else {
     RCLCPP_ERROR_STREAM(logger_, "Falied to convert calibration file into angle table");
   }
