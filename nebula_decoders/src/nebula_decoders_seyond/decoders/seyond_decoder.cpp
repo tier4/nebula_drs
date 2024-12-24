@@ -120,7 +120,7 @@ void SeyondDecoder::point_xyz_data_parse_(
       point.intensity = point_ptr->refl;
     }
 
-    point.time_stamp = point_ptr->ts_10us / ten_us_in_second_c + current_ts_start_;
+    point.time_stamp = point_ptr->ts_10us * 10000;
     point.distance = point_ptr->radius;
     // point.x = point_ptr->x;
     // point.y = point_ptr->y;
@@ -232,18 +232,17 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
           get_xyzr_meter(full_angles.angles[channel], pt.radius, scan_id, &xyzr);
 
           drivers::NebulaPoint point;
-          point.x = xyzr.x;
+          point.x = xyzr.z;
           point.y = xyzr.y;
-          point.z = xyzr.z;
+          point.z = xyzr.x;
           point.distance = pt.radius;
           point.intensity = pt.refl;
-          point.time_stamp = block->header.ts_10us;
+          point.time_stamp = block->header.ts_10us * 10000;
           decode_pc_->points.emplace_back(point);
         }
       }
     }
   }
-
   output_scan_timestamp_ns_ = pkt->common.ts_start_us * 1000;
 }
 
