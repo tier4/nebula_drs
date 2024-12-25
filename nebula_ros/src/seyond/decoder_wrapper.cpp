@@ -28,7 +28,7 @@ SeyondDecoderWrapper::SeyondDecoderWrapper(
     if (!calibration_result.has_value()) {
       throw std::runtime_error("No valid calibration found");
     }
-    auto calibration_cfg_ptr_ = calibration_result.value();
+    calibration_cfg_ptr_ = calibration_result.value();
     driver_ptr_ = std::make_shared<SeyondDriver>(config, calibration_cfg_ptr_);
   } else {
     driver_ptr_ = std::make_shared<SeyondDriver>(config, calibration_cfg_ptr_);
@@ -109,7 +109,9 @@ SeyondDecoderWrapper::get_calibration_result_t SeyondDecoderWrapper::GetCalibrat
       RCLCPP_ERROR_STREAM(logger_, "Could not download calibration data: " << e.what());
     }
     // Otherwise read from the provided file
-  } else if (calibration_file_path != "") {
+  } else if (
+    sensor_cfg_->sensor_model == drivers::SensorModel::SEYOND_ROBIN_W &&
+    calibration_file_path != "") {
     try {
       RCLCPP_INFO(logger_, "Reading calibration from file.");
       auto status = calib->LoadFromFile(calibration_file_path);
@@ -202,7 +204,6 @@ void SeyondDecoderWrapper::ProcessCloudPacket(
         std::string calibration_string = calibration_cfg_ptr_->GetCalibrationString();
         std::vector<uint8_t> calibration_packet(
           calibration_string.begin(), calibration_string.end());
-
         msg_ptr->data.swap(calibration_packet);
         current_scan_msg_->packets.emplace_back(*msg_ptr);
       }

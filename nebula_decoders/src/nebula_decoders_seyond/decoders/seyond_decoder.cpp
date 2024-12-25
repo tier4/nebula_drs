@@ -2,6 +2,7 @@
 
 #include "nebula_decoders/nebula_decoders_seyond/decoders/seyond_packet.hpp"
 
+#include <cstdint>
 #include <cstring>
 #include <iostream>
 
@@ -57,39 +58,41 @@ SeyondDecoder::SeyondDecoder(
 
   // TODO: add to functions
   size_t table_packet_size = sizeof(SeyondDataPacket) + sizeof(SeyondAngleHVTable);
-  // char * calibration_string = new char[table_packet_size];
-  anglehv_table_ = reinterpret_cast<SeyondDataPacket *>(new char[table_packet_size]);
-  memset(anglehv_table_, 0, table_packet_size);
+  auto * new_anglehv_table = reinterpret_cast<SeyondDataPacket *>(new char[table_packet_size]);
+  memset(new_anglehv_table, 0, table_packet_size);
 
   if (calibration_configuration_->GetCalibrationString().length() == table_packet_size) {
     memcpy(
-      anglehv_table_, calibration_configuration_->GetCalibrationString().c_str(),
+      new_anglehv_table, calibration_configuration_->GetCalibrationString().c_str(),
       table_packet_size);
 
     // Copy out the table
     AngleHV tmp_table[kPolygonMaxFacets][kPolygonTableSize][kMaxSet][kMaxReceiverInSet];
     memcpy(
-      tmp_table, reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->table,
+      tmp_table, reinterpret_cast<const SeyondAngleHVTable *>(new_anglehv_table->payload)->table,
       sizeof(tmp_table));
 
-    anglehv_table_->common.version.magic_number = kSeyondMagicNumberDataPacket;
-    anglehv_table_->type = SEYOND_ROBINW_ITEM_TYPE_ANGLEHV_TABLE;
-    anglehv_table_->common.size = sizeof(SeyondAngleHVTable) + sizeof(SeyondDataPacket);
-    reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->version_number.major_version =
-      kSeyondAngleHVTableVersionMajor;
-    reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->version_number.minor_version =
-      kSeyondAngleHVTableVersionMinor;
-    reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->id = 0;
-    anglehv_table_->item_number = 1;
-    anglehv_table_->is_first_sub_frame = 1;
-    anglehv_table_->is_last_sub_frame = 1;
-    anglehv_table_->sub_idx = 0;
-    anglehv_table_->item_size = sizeof(SeyondAngleHVTable);
+    new_anglehv_table->common.version.magic_number = kSeyondMagicNumberDataPacket;
+    new_anglehv_table->type = SEYOND_ROBINW_ITEM_TYPE_ANGLEHV_TABLE;
+    new_anglehv_table->common.size = sizeof(SeyondAngleHVTable) + sizeof(SeyondDataPacket);
+    reinterpret_cast<SeyondAngleHVTable *>(new_anglehv_table->payload)
+      ->version_number.major_version = kSeyondAngleHVTableVersionMajor;
+    reinterpret_cast<SeyondAngleHVTable *>(new_anglehv_table->payload)
+      ->version_number.minor_version = kSeyondAngleHVTableVersionMinor;
+    reinterpret_cast<SeyondAngleHVTable *>(new_anglehv_table->payload)->id = 0;
+    new_anglehv_table->item_number = 1;
+    new_anglehv_table->is_first_sub_frame = 1;
+    new_anglehv_table->is_last_sub_frame = 1;
+    new_anglehv_table->sub_idx = 0;
+    new_anglehv_table->item_size = sizeof(SeyondAngleHVTable);
     memcpy(
-      reinterpret_cast<SeyondAngleHVTable *>(anglehv_table_->payload)->table, tmp_table,
+      reinterpret_cast<SeyondAngleHVTable *>(new_anglehv_table->payload)->table, tmp_table,
       sizeof(tmp_table));
+    anglehv_table_ = std::as_const(new_anglehv_table);
   } else {
-    RCLCPP_ERROR_STREAM(logger_, "Falied to convert calibration file into angle table");
+    RCLCPP_ERROR_STREAM(
+      logger_,
+      "No calibration data found from the sensor or calibration file. Checking in packets");
   }
 }
 
@@ -120,11 +123,8 @@ void SeyondDecoder::point_xyz_data_parse_(
       point.intensity = point_ptr->refl;
     }
 
-    point.time_stamp = point_ptr->ts_10us * 10000;
+    point.time_stamp = static_cast<uint32_t>(point_ptr->ts_10us) * 10000;
     point.distance = point_ptr->radius;
-    // point.x = point_ptr->x;
-    // point.y = point_ptr->y;
-    // point.z = point_ptr->z;
     point.x = point_ptr->z;
     point.y = -(point_ptr->y);
     point.z = point_ptr->x;
@@ -237,7 +237,7 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
           point.z = xyzr.x;
           point.distance = pt.radius;
           point.intensity = pt.refl;
-          point.time_stamp = block->header.ts_10us * 10000;
+          point.time_stamp = static_cast<uint32_t>(block->header.ts_10us) * 10000;
           decode_pc_->points.emplace_back(point);
         }
       }
@@ -256,33 +256,37 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
   ProtocolCompatibility(packet_copy);
 
   uint64_t packet_id = 0;
+  uint32_t packet_type = 0;
   std::memcpy(&packet_id, &packet_copy[kSeyondPktIdSection], kSeyondPktIdLength);
-  // std::cout << "Packet ID: " << packet_id << std::endl;
-  if (current_packet_id_ == 0) {
-    current_packet_id_ = packet_id;
-    std::cout << "First packet received" << std::endl;
-  }
+  std::memcpy(&packet_type, &packet_copy[kSeyondPktTypeIndex], 1);
 
-  if (has_scanned_) {
-    has_scanned_ = false;
-  }
-
-  // Publish the whole frame data if scan is complete
-  // TODO(drwnz): have to handle out-of-order packets. Currently just tossing anything that arrives
-  // out of order.
-  if (current_packet_id_ != packet_id) {
-    // std::cout << "Old packet ID: " << current_packet_id_ << ", New packet ID: " << packet_id <<
-    // " No. points: " << decode_pc_->size() << std::endl;
-    if ((current_packet_id_ < packet_id) || (packet_id == 0)) {
-      if (decode) {
-        std::swap(decode_pc_, output_pc_);
-        decode_pc_->clear();
-      }
-      has_scanned_ = true;
+  if (packet_type != SEYOND_ROBINW_ITEM_TYPE_ANGLEHV_TABLE) {
+    if (current_packet_id_ == 0 ) {
       current_packet_id_ = packet_id;
-    } else {
-      std::cout << "packet arrived out of order, discarded" << std::endl;
-      return -1;
+      std::cout << "First packet received" << std::endl;
+    }
+
+    if (has_scanned_) {
+      has_scanned_ = false;
+    }
+
+    // Publish the whole frame data if scan is complete
+    // TODO(drwnz): have to handle out-of-order packets. Currently just tossing anything that arrives
+    // out of order.
+    if (current_packet_id_ != packet_id) {
+      // std::cout << "Old packet ID: " << current_packet_id_ << ", New packet ID: " << packet_id <<
+      // " No. points: " << decode_pc_->size() << std::endl;
+      if ((current_packet_id_ < packet_id) || (packet_id == 0)) {
+        if (decode) {
+          std::swap(decode_pc_, output_pc_);
+          decode_pc_->clear();
+        }
+        has_scanned_ = true;
+        current_packet_id_ = packet_id;
+      } else {
+        std::cout << "packet arrived out of order, discarded" << std::endl;
+        return -1;
+      }
     }
   }
   if (decode) {
@@ -302,10 +306,25 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
     } else if (is_xyz_data(seyond_pkt->type)) {
       data_packet_parse_(seyond_pkt);
     } else if (is_robinw_compact_data(seyond_pkt->type)) {
-      compact_data_packet_parse_(seyond_pkt);
-    } else if (is_anglehv_table(seyond_pkt->type) && (anglehv_table_ == nullptr)) {
-      // anglehv_table_ = reinterpret_cast<const SeyondAngleHVTable *>(
-      //   reinterpret_cast<const char *>(seyond_pkt) + sizeof(SeyondDataPacket));
+      if (anglehv_table_ == nullptr) {
+        RCLCPP_ERROR_STREAM(logger_, "No calibration data found, packet not decoded");
+      } else {
+        compact_data_packet_parse_(seyond_pkt);
+      }
+    } else if (is_anglehv_table(seyond_pkt->type)) {
+      // If there is no calibration data currently available, apply
+      if (anglehv_table_ == nullptr) {
+        anglehv_table_ = seyond_pkt;
+        RCLCPP_INFO_STREAM(
+          logger_, "Calibration data found in packets, decoding will be attempted");
+
+        
+        size_t table_packet_size = sizeof(SeyondDataPacket) + sizeof(SeyondAngleHVTable);
+        auto * new_anglehv_table = reinterpret_cast<SeyondDataPacket *>(new char[table_packet_size]);
+
+        memcpy(new_anglehv_table, seyond_pkt, table_packet_size);
+        anglehv_table_ = std::as_const(new_anglehv_table);
+      }
     } else {
       RCLCPP_ERROR_STREAM(logger_, "cframe type" << seyond_pkt->type << "is not supported");
     }

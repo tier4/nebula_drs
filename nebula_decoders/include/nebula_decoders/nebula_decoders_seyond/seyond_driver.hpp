@@ -31,7 +31,7 @@ private:
   /// @brief Current driver status
   Status driver_status_;
   /// @brief Decoder according to the model
-  std::shared_ptr<SeyondScanDecoder> scan_decoder_;
+  std::shared_ptr<seyond_packet::SeyondDecoder> scan_decoder_;
 
   // template <typename SensorT>
   std::shared_ptr<seyond_packet::SeyondDecoder> InitializeDecoder(

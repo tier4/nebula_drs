@@ -652,7 +652,7 @@ public:
   }
 
 private:
-  SeyondDataPacket * anglehv_table_ = nullptr;
+  const SeyondDataPacket * anglehv_table_ = nullptr;
 
   /// @brief check packet vaild
   /// @param buffer Point Udp Data Buffer
