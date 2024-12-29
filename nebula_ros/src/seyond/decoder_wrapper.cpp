@@ -62,7 +62,7 @@ SeyondDecoderWrapper::SeyondDecoderWrapper(
   RCLCPP_INFO_STREAM(logger_, ". Wrapper=" << status_);
 
   cloud_watchdog_ =
-    std::make_shared<WatchdogTimer>(*parent_node, 100'000us, [this, parent_node](bool ok) {
+    std::make_shared<WatchdogTimer>(*parent_node, 110'000us, [this, parent_node](bool ok) {
       if (ok) return;
       RCLCPP_WARN_THROTTLE(
         logger_, *parent_node->get_clock(), 5000, "Missed pointcloud output deadline");
@@ -191,21 +191,23 @@ void SeyondDecoderWrapper::ProcessCloudPacket(
     if (current_scan_msg_->packets.size() == 0) {
       current_scan_msg_->header.stamp = packet_msg->stamp;
       // Add the calibration packet
-      if (
-        (calibration_cfg_ptr_->GetCalibrationString().length()) &&
-        (sensor_cfg_->sensor_model == drivers::SensorModel::SEYOND_ROBIN_W)) {
-        const auto now = std::chrono::high_resolution_clock::now();
-        const auto timestamp_ns =
-          std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+      if (calibration_cfg_ptr_) {
+        if (
+          (!calibration_cfg_ptr_->GetCalibrationString().empty()) &&
+          (sensor_cfg_->sensor_model == drivers::SensorModel::SEYOND_ROBIN_W)) {
+          const auto now = std::chrono::high_resolution_clock::now();
+          const auto timestamp_ns =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
 
-        auto msg_ptr = std::make_unique<nebula_msgs::msg::NebulaPacket>();
-        msg_ptr->stamp.sec = static_cast<int>(timestamp_ns / 1'000'000'000);
-        msg_ptr->stamp.nanosec = static_cast<int>(timestamp_ns % 1'000'000'000);
-        std::string calibration_string = calibration_cfg_ptr_->GetCalibrationString();
-        std::vector<uint8_t> calibration_packet(
-          calibration_string.begin(), calibration_string.end());
-        msg_ptr->data.swap(calibration_packet);
-        current_scan_msg_->packets.emplace_back(*msg_ptr);
+          auto msg_ptr = std::make_unique<nebula_msgs::msg::NebulaPacket>();
+          msg_ptr->stamp.sec = static_cast<int>(timestamp_ns / 1'000'000'000);
+          msg_ptr->stamp.nanosec = static_cast<int>(timestamp_ns % 1'000'000'000);
+          std::string calibration_string = calibration_cfg_ptr_->GetCalibrationString();
+          std::vector<uint8_t> calibration_packet(
+            calibration_string.begin(), calibration_string.end());
+          msg_ptr->data.swap(calibration_packet);
+          current_scan_msg_->packets.emplace_back(*msg_ptr);
+        }
       }
     }
     current_scan_msg_->packets.emplace_back(*packet_msg);

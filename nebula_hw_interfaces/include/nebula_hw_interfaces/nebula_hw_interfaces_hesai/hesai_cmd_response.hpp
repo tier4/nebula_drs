@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <ostream>
 #include <string>
+#include <iomanip>
 
 using namespace boost::endian;  // NOLINT(build/namespaces)
 

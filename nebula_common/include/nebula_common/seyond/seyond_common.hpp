@@ -52,7 +52,7 @@ struct SeyondCalibrationConfiguration : public LidarConfigurationBase
 {
   std::map<size_t, float> elev_angle_map;
   std::map<size_t, float> azimuth_offset_map;
-  std::string calibration_data;
+  std::string calibration_data{};
 
   inline nebula::Status LoadFromFile(const std::string & calibration_file)
   {
