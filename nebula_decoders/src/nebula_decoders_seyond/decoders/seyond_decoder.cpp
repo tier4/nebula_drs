@@ -103,7 +103,7 @@ void SeyondDecoder::point_xyz_data_parse_(
   bool is_en_data, bool is_use_refl, uint32_t point_num, PointType point_ptr)
 {
   for (uint32_t i = 0; i < point_num; ++i, ++point_ptr) {
-    drivers::NebulaPoint point;
+    drivers::NebulaPoint point{};
     if (point_ptr->channel >= kSeyondChannelNumber) {
       RCLCPP_ERROR_STREAM(logger_, "bad channel " << point_ptr->channel);
       continue;
@@ -126,7 +126,7 @@ void SeyondDecoder::point_xyz_data_parse_(
     }
 
     point.time_stamp = static_cast<uint32_t>(point_ptr->ts_10us) * 10000;
-    point.distance = point_ptr->radius;
+    point.distance = static_cast<float>(point_ptr->radius)/400.0;
     point.x = point_ptr->z;
     point.y = -(point_ptr->y);
     point.z = point_ptr->x;
@@ -233,12 +233,14 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
           scan_id = channel_mapping[index] + block->header.facet * tdc_channel_number;
           get_xyzr_meter(full_angles.angles[channel], pt.radius, scan_id, &xyzr);
 
-          drivers::NebulaPoint point;
+          drivers::NebulaPoint point{};
           point.x = xyzr.z;
-          point.y = xyzr.y;
+          point.y = -(xyzr.y);
           point.z = xyzr.x;
-          point.distance = pt.radius;
-          point.intensity = pt.refl;
+          point.azimuth = static_cast<float>(full_angles.angles[channel].h_angle * kRadPerSeyondAngleUnit);
+          point.elevation = static_cast<float>(full_angles.angles[channel].v_angle * kRadPerSeyondAngleUnit);
+          point.distance = static_cast<float>(pt.radius)/400.0;
+          point.intensity = std::ceil(static_cast<double>(pt.refl) * 255 / 4095);
           point.time_stamp = static_cast<uint32_t>(block->header.ts_10us) * 10000;
           decode_pc_->points.emplace_back(point);
         }
