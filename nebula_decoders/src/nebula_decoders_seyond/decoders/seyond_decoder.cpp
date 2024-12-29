@@ -193,8 +193,9 @@ void SeyondDecoder::data_packet_parse_(const SeyondDataPacket * pkt)
 
 void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
 {
-  uint32_t return_number;
-  uint32_t unit_size;
+  uint32_t return_number{};
+  uint32_t unit_size{};
+  double intensity_scaling_factor{};
   if (
     pkt->multi_return_mode == SEYOND_MULTIPLE_RETURN_MODE_2_STRONGEST ||
     pkt->multi_return_mode == SEYOND_MULTIPLE_RETURN_MODE_2_STRONGEST_FURTHEST) {
@@ -206,6 +207,11 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
   } else {
     RCLCPP_ERROR_STREAM(logger_, "Invalid return mode");
   }
+
+  if (pkt->use_reflectance)
+    intensity_scaling_factor = pkt->common.version.major_version > 3 ? 1.0 : 255.0 / 4095.0;
+  else
+    intensity_scaling_factor = 255.0 / 1600.0;
 
   const SeyondCoBlock * block = reinterpret_cast<const SeyondCoBlock *>(pkt->payload);
   for (uint32_t i = 0; i < pkt->item_number;
@@ -242,13 +248,13 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
           point.elevation =
             static_cast<float>(full_angles.angles[channel].v_angle * kRadPerSeyondAngleUnit);
           point.distance = static_cast<float>(pt.radius) / 400.0;
-          // TODO (drwnz): determine correct scaling for intensity mode, handle older devices that
-          // go up to 4096.
-          point.intensity = pkt->use_reflectance
-                              ? static_cast<uint8_t>(pt.refl)
-                              : std::ceil(static_cast<double>(pt.refl) * 255 / 1600);
-          point.time_stamp = static_cast<uint32_t>(block->header.ts_10us) * 10000;
+          // TODO (drwnz): determine correct scaling for intensity mode, more efficinet
+          // implementation.
+          point.intensity = std::ceil(static_cast<double>(pt.refl) * intensity_scaling_factor);
           decode_pc_->points.emplace_back(point);
+          // std::cout << static_cast<uint16_t>(point.intensity) << ", " << pkt->use_reflectance
+          //           << ", " << static_cast<uint16_t>(pkt->common.version.major_version) << ", "
+          //           << static_cast<uint16_t>(pkt->common.version.major_version) << std::endl;
         }
       }
     }
