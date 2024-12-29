@@ -126,7 +126,7 @@ void SeyondDecoder::point_xyz_data_parse_(
     }
 
     point.time_stamp = static_cast<uint32_t>(point_ptr->ts_10us) * 10000;
-    point.distance = static_cast<float>(point_ptr->radius)/400.0;
+    point.distance = static_cast<float>(point_ptr->radius) / 400.0;
     point.x = point_ptr->z;
     point.y = -(point_ptr->y);
     point.z = point_ptr->x;
@@ -237,10 +237,16 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
           point.x = xyzr.z;
           point.y = -(xyzr.y);
           point.z = xyzr.x;
-          point.azimuth = static_cast<float>(full_angles.angles[channel].h_angle * kRadPerSeyondAngleUnit);
-          point.elevation = static_cast<float>(full_angles.angles[channel].v_angle * kRadPerSeyondAngleUnit);
-          point.distance = static_cast<float>(pt.radius)/400.0;
-          point.intensity = std::ceil(static_cast<double>(pt.refl) * 255 / 4095);
+          point.azimuth =
+            static_cast<float>(full_angles.angles[channel].h_angle * kRadPerSeyondAngleUnit);
+          point.elevation =
+            static_cast<float>(full_angles.angles[channel].v_angle * kRadPerSeyondAngleUnit);
+          point.distance = static_cast<float>(pt.radius) / 400.0;
+          // TODO (drwnz): determine correct scaling for intensity mode, handle older devices that
+          // go up to 4096.
+          point.intensity = pkt->use_reflectance
+                              ? static_cast<uint8_t>(pt.refl)
+                              : std::ceil(static_cast<double>(pt.refl) * 255 / 1600);
           point.time_stamp = static_cast<uint32_t>(block->header.ts_10us) * 10000;
           decode_pc_->points.emplace_back(point);
         }
@@ -278,7 +284,8 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
     // TODO(drwnz): have to handle out-of-order packets. Currently just tossing anything that
     // arrives out of order.
     if (current_packet_id_ != seyond_pkt->idx) {
-      // std::cout << "Old packet ID: " << current_packet_id_ << ", New packet ID: " << seyond_pkt->idx
+      // std::cout << "Old packet ID: " << current_packet_id_ << ", New packet ID: " <<
+      // seyond_pkt->idx
       //           << " No. points: " << decode_pc_->size() << std::endl;
       if ((current_packet_id_ < seyond_pkt->idx) || (seyond_pkt->idx == 0)) {
         if (decode) {
