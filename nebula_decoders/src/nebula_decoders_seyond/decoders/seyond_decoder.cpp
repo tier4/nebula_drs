@@ -253,6 +253,7 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
           // TODO (drwnz): determine correct scaling for intensity mode, more efficinet
           // implementation.
           point.intensity = std::ceil(static_cast<double>(pt.refl) * intensity_scaling_factor);
+          point.time_stamp = static_cast<uint32_t>(block->header.ts_10us) * 10000;
           decode_pc_->points.emplace_back(point);
         }
       }
