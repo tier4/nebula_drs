@@ -232,12 +232,14 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
         SeyondXyzrD xyzr;
         uint32_t scan_id = 0;
         if (
-          pt.radius < sensor_configuration_->min_range ||
-          pt.radius > sensor_configuration_->max_range) {
-          /*&& is_robinw_inside_fov_point(full_angles.angles[channel])*/
+          pt.radius * kMeterPerSeyondDistanceUnit400 > sensor_configuration_->min_range &&
+          pt.radius * kMeterPerSeyondDistanceUnit400 < sensor_configuration_->max_range &&
+          is_robinw_inside_fov_point(full_angles.angles[channel])) {
           int index = block->header.scan_id * kMaxReceiverInSet + channel;
           scan_id = channel_mapping[index] + block->header.facet * tdc_channel_number;
-          get_xyzr_meter(full_angles.angles[channel], pt.radius, scan_id, &xyzr);
+          get_xyzr_meter(
+            full_angles.angles[channel], pt.radius, scan_id, &xyzr,
+            static_cast<SeyondItemType>(pkt->type));
 
           drivers::NebulaPoint point{};
           point.x = xyzr.z;
@@ -247,14 +249,11 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
             static_cast<float>(full_angles.angles[channel].h_angle * kRadPerSeyondAngleUnit);
           point.elevation =
             static_cast<float>(full_angles.angles[channel].v_angle * kRadPerSeyondAngleUnit);
-          point.distance = static_cast<float>(pt.radius) / 400.0;
+          point.distance = static_cast<float>(pt.radius) * kMeterPerSeyondDistanceUnit;
           // TODO (drwnz): determine correct scaling for intensity mode, more efficinet
           // implementation.
           point.intensity = std::ceil(static_cast<double>(pt.refl) * intensity_scaling_factor);
           decode_pc_->points.emplace_back(point);
-          // std::cout << static_cast<uint16_t>(point.intensity) << ", " << pkt->use_reflectance
-          //           << ", " << static_cast<uint16_t>(pkt->common.version.major_version) << ", "
-          //           << static_cast<uint16_t>(pkt->common.version.major_version) << std::endl;
         }
       }
     }
@@ -307,7 +306,6 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
     }
 
     if (decode) {
-      // std::cout << "Packet type: " << seyond_pkt->type << std::endl;
       if (is_sphere_data(seyond_pkt->type)) {
         // convert sphere to xyz
         bool ret_val = convert_to_xyz_pointcloud(
@@ -458,7 +456,6 @@ void SeyondDecoder::get_xyzr_meter(
 {
   if (type == SEYOND_ITEM_TYPE_SPHERE_POINTCLOUD) {
     result->radius = radius_unit * kMeterPerSeyondDistanceUnit200;
-
   } else {
     result->radius = radius_unit * kMeterPerSeyondDistanceUnit400;
   }

@@ -637,9 +637,9 @@ public:
       for (; ch1 < kSeyondChannelNumber; ch1++) {
         uint32_t m1 = 0;
         for (; m1 < mr; m1++) {
-          // if (anglehv_table && !is_robinw_inside_fov_point(full_angles.angles[ch1])) {
-          //   continue;
-          // }
+          if (anglehv_table && !is_robinw_inside_fov_point(full_angles.angles[ch1])) {
+            continue;
+          }
           const Point & pt = block->points[ch1 + (m1 << kSeyondCompactChannelNumberBit)];
           const SeyondDataPacketCoPointsCallbackParams<Block, Point> in_params{
             in_pkt, *block, pt, full_angles, static_cast<uint16_t>(ch1), static_cast<uint16_t>(m1)};
@@ -649,6 +649,24 @@ public:
       }
     }
     return out_count;
+  }
+
+  /**
+   * @brief check if the point is inside the field of view (FOV)
+   * only vilid inside the FOV
+   * @param angle point angle
+   * @return Return true if the point is valid, false otherwise
+   */
+  static inline bool is_robinw_inside_fov_point(SeyondBlockAngles angle)
+  {
+    // FOV: -60 ~ 60, -55 ~ 15
+    static int fov_top_left_angle = -60.0 * kSeyondAngleUnitPerDegree;
+    static int fov_top_right_angle = 60.0 * kSeyondAngleUnitPerDegree;
+    static int fov_top_low_angle = -55.0 * kSeyondAngleUnitPerDegree;
+    static int fov_top_high_angle = 15.0 * kSeyondAngleUnitPerDegree;
+
+    return angle.h_angle >= fov_top_left_angle && angle.h_angle <= fov_top_right_angle &&
+           angle.v_angle >= fov_top_low_angle && angle.v_angle <= fov_top_high_angle;
   }
 
 private:
