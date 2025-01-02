@@ -126,7 +126,7 @@ void SeyondDecoder::point_xyz_data_parse_(
     }
 
     point.time_stamp = static_cast<uint32_t>(point_ptr->ts_10us) * 10000;
-    point.distance = static_cast<float>(point_ptr->radius) / 400.0;
+    point.distance = point_ptr->radius;
     point.x = point_ptr->z;
     point.y = -(point_ptr->y);
     point.z = point_ptr->x;
@@ -230,10 +230,11 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
       for (uint32_t m = 0; m < return_number; m++) {
         const SeyondCoChannelPoint & pt = block->points[seyondcoblock_get_idx(channel, m)];
         SeyondXyzrD xyzr;
+        float radial_distance = static_cast<double>(pt.radius) * kMeterPerSeyondDistanceUnit400;
         uint32_t scan_id = 0;
         if (
-          pt.radius * kMeterPerSeyondDistanceUnit400 > sensor_configuration_->min_range &&
-          pt.radius * kMeterPerSeyondDistanceUnit400 < sensor_configuration_->max_range &&
+          radial_distance > sensor_configuration_->min_range &&
+          radial_distance < sensor_configuration_->max_range &&
           is_robinw_inside_fov_point(full_angles.angles[channel])) {
           int index = block->header.scan_id * kMaxReceiverInSet + channel;
           scan_id = channel_mapping[index] + block->header.facet * tdc_channel_number;
@@ -249,7 +250,7 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
             static_cast<float>(full_angles.angles[channel].h_angle * kRadPerSeyondAngleUnit);
           point.elevation =
             static_cast<float>(full_angles.angles[channel].v_angle * kRadPerSeyondAngleUnit);
-          point.distance = static_cast<float>(pt.radius) * kMeterPerSeyondDistanceUnit;
+          point.distance = radial_distance;
           // TODO (drwnz): determine correct scaling for intensity mode, more efficinet
           // implementation.
           point.intensity = std::ceil(static_cast<double>(pt.refl) * intensity_scaling_factor);
