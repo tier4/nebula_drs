@@ -90,7 +90,12 @@ enum SeyondItemType {
   SEYOND_FALCONIII_ITEM_TYPE_SPHERE_POINTCLOUD = 11,
   SEYOND_FALCONIII_ITEM_TYPE_XYZ_POINTCLOUD = 12,
 
-  SEYOND_ITEM_TYPE_MAX = 13,
+  // ROBINW COMPACT POINTCLOUD, SeyondCoPoint
+  SEYOND_ROBINW_ITEM_TYPE_COMPACT_POINTCLOUD = 13,
+  // ROBINW AngleHV TABLE
+  SEYOND_ROBINW_ITEM_TYPE_ANGLEHV_TABLE = 100,
+
+  SEYOND_ITEM_TYPE_MAX = 101,
 };
 
 enum SeyondReflectanceMode {
@@ -129,13 +134,15 @@ typedef double SeyondTimestampUs;
 #define SEYOND_MAX_MULTI_RETURN 2
 #define SEYOND_SN_SZIE 16
 #define SEYOND_HW_NUMBER_SIZE 3
+#define SEYOND_COMPACT_CHANNEL_NUMBER_BIT 3
+#define SEYOND_COMPACT_CHANNEL_NUMBER (1 << SEYOND_COMPACT_CHANNEL_NUMBER_BIT)
 static const uint16_t kSeyondMagicNumberDataPacket = 0x176A;
-static const uint8_t kSeyondMajorVersionDataPacket = 2;  // upgrade Major version from 1->2 2023/6/6
+static const uint8_t kSeyondMajorVersionDataPacket = 3;  // upgrade Major version from 2->3 2023/5/8
 static const uint8_t kSeyondMinorVersionDataPacket = 1;
 static const uint16_t kSeyondMagicNumberStatusPacket = 0x186B;
 static const uint8_t kSeyondMajorVersionStatusPacket =
-  2;  // upgrade Major version from 1->2 2023/6/6
-static const uint8_t kSeyondMinorVersionStatusPacket = 1;
+  3;  // upgrade Major version from 2->3 2023/5/8
+static const uint8_t kSeyondMinorVersionStatusPacket = 0;
 
 static const uint32_t kSeyondDistanceUnitPerMeter = 400;
 static const double kMeterPerSeyondDistanceUnit = 1.0 / kSeyondDistanceUnitPerMeter;
@@ -153,10 +160,25 @@ static const uint32_t kSeyondChannelNumberBit = SEYOND_CHANNEL_NUMBER_BIT;
 static const uint32_t kSeyondChannelNumber = SEYOND_CHANNEL_NUMBER;
 static const uint32_t kSeyondMaxMultiReturn = SEYOND_MAX_MULTI_RETURN;
 static const int16_t kSeyondVAngleDiffBase = 196;
+static const uint32_t kSeyondCompactChannelNumberBit = SEYOND_COMPACT_CHANNEL_NUMBER_BIT;
+static const uint32_t kSeyondCompactChannelNumber = SEYOND_COMPACT_CHANNEL_NUMBER;
+
+static const int kPolygonMaxFacets = 4;
+static const int kPolygonMinAngle = - (45 * kSeyondAngleUnitPerPiRad / kSeyondDegreePerPiRad);
+static const int kPolygonMaxAngle = 45 * kSeyondAngleUnitPerPiRad / kSeyondDegreePerPiRad;
+static const int kEncoderTableShift = 8;  // table resolution
+static const int kEncoderTableStep = 1 << kEncoderTableShift;
+static const int kEncoderTableMask = kEncoderTableStep - 1;
+static const int kPolygonTableSize = ((kPolygonMaxAngle - kPolygonMinAngle) >> kEncoderTableShift) + 1;
+static const int kMaxSet = 6;
+static const uint32_t kMaxReceiverInSet = kSeyondCompactChannelNumber;
 
 static const int kSeyondBaseFaultEnd = 64;
 static const double kSeyondNopROI = 10000.0;
 static const uint32_t kConvertSize = 1024 * 1024 * 10;
+
+static const uint8_t kSeyondAngleHVTableVersionMajor = 0;
+static const uint8_t kSeyondAngleHVTableVersionMinor = 1;
 
 union InputParam {
   struct
@@ -450,10 +472,76 @@ typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondEnBlock2)
 SeyondEnBlock2;
 DEFINE_SEYOND_COMPACT_STRUCT_END
 
+/* compact format, 4 bytes per point */
+typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondCoChannelPoint)
+{
+  uint32_t refl : 12;   /* reflectance or intensity robin 1-4095  */
+  uint32_t radius : 18; /* distance in distance unit, distance unit:1/400m, range [0, 655.35m] */
+  uint32_t is_2nd_return : 1; /* 0: 1st return, 1: 2nd return                  */
+  uint32_t firing : 1;        /* 0: weak, 1: strong */
+}
+SeyondCoChannelPoint;
+
+DEFINE_SEYOND_COMPACT_STRUCT_END
+/* 10 bytes per CoBlock header */
+typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondCoBlockHeader)
+{
+  /* polygon angle, 0 is straight forward,
+     unit is kRadPerSeyondAngleUnit rad, range (-PI to PI) */
+  int16_t p_angle;
+  int16_t g_angle;
+  /* relative timestamp (to ts_start_us) in 10us, 0-655,350us */
+  uint16_t ts_10us;
+  uint16_t scan_idx;    /* point idx within the scan line */
+  uint16_t scan_id : 9; /* id of the scan line */
+  /*   0: in sparse region
+  0x01: in vertical slow region
+  0x11: in center ROI
+  only for falcon  */
+  uint16_t in_roi : 2;
+  uint16_t facet : 3;
+  uint16_t reserved_flags : 2; /* all 0 */
+}
+SeyondCoBlockHeader;
+DEFINE_SEYOND_COMPACT_STRUCT_END
+
+typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondCoBlock)
+{
+  SeyondCoBlockHeader header;
+  SeyondCoChannelPoint points[0];
+}
+SeyondCoBlock;
+DEFINE_SEYOND_COMPACT_STRUCT_END
+
+/* 10 + 4 * 8 = 42 bytes, 5.25 bytes/point */
+typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondCoBlock1)
+{
+  SeyondCoBlockHeader header;
+  SeyondCoChannelPoint points[SEYOND_COMPACT_CHANNEL_NUMBER];
+}
+SeyondCoBlock1;
+DEFINE_SEYOND_COMPACT_STRUCT_END
+
+/* 10 + 8 * 8 = 74 bytes */
+typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondCoBlock2)
+{
+  SeyondCoBlockHeader header;
+  SeyondCoChannelPoint points[SEYOND_COMPACT_CHANNEL_NUMBER * SEYOND_MAX_MULTI_RETURN];
+}
+SeyondCoBlock2;
+DEFINE_SEYOND_COMPACT_STRUCT_END
+
 static inline size_t seyondblock_get_idx(size_t channel, size_t r)
 {
   /* r0_ch0 r0_ch1 r0_ch2 r0_ch3 r1_ch0 r1_ch1 r1_ch2 r1_ch3 */
   return channel + (r << kSeyondChannelNumberBit);
+}
+
+static inline size_t seyondcoblock_get_idx(size_t channel, size_t r)
+{
+  /* r0_ch0 r0_ch1 r0_ch2 r0_ch3 r0_ch4 r0_ch5 r0_ch6 r0_ch7
+     r1_ch0 r1_ch1 r1_ch2 r1_ch3 r1_ch4 r1_ch5 r1_ch6 r1_ch7 */
+  return channel + (r << kSeyondCompactChannelNumberBit);
 }
 
 typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondMessage)
@@ -514,6 +602,33 @@ typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondCommonHeader)
 SeyondCommonHeader;
 DEFINE_SEYOND_COMPACT_STRUCT_END
 
+typedef DEFINE_SEYOND_COMPACT_STRUCT(AngleHV)
+{
+  int16_t v;
+  int16_t h;
+}
+AngleHV;
+DEFINE_SEYOND_COMPACT_STRUCT_END
+
+typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondAngleHVTableVersion)
+{
+  /* 2 byte */
+  uint8_t major_version;
+  uint8_t minor_version;
+}
+SeyondAngleHVTableVersion;
+DEFINE_SEYOND_COMPACT_STRUCT_END
+
+typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondAngleHVTable)
+{
+  SeyondAngleHVTableVersion version_number;
+  uint64_t id;
+  AngleHV table[kPolygonMaxFacets][kPolygonTableSize][kMaxSet][kMaxReceiverInSet];
+  uint8_t reserved[512];
+}
+SeyondAngleHVTable;
+DEFINE_SEYOND_COMPACT_STRUCT_END
+
 /*
  * Main data packet definition
  * 26 + 12 + 10 + 2 + 4 + 16 = 70 bytes, max overhead is 70/1472 = 4.7%,
@@ -562,7 +677,10 @@ typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondDataPacket)
     // Robin & Falcon2.1
     SeyondEnBlock1 seyond_en_block1s[0];
     SeyondEnBlock2 seyond_en_block2s[0];
+    SeyondCoBlock1 seyond_co_block1s[0];
+    SeyondCoBlock2 seyond_co_block2s[0];
     SeyondEnXyzPoint en_xyz_points[0];
+    SeyondAngleHVTable seyond_anglehv_table[0];
   };
 #else
   char payload[0];

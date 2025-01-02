@@ -14,7 +14,7 @@ SeyondDriver::SeyondDriver(
   scan_decoder_ = InitializeDecoder(sensor_configuration, calibration_configuration);
 }
 
-std::shared_ptr<SeyondScanDecoder> SeyondDriver::InitializeDecoder(
+std::shared_ptr<seyond_packet::SeyondDecoder> SeyondDriver::InitializeDecoder(
   const std::shared_ptr<const drivers::SeyondSensorConfiguration> & sensor_configuration,
   const std::shared_ptr<const drivers::SeyondCalibrationConfiguration> & calibration_configuration)
 {
@@ -40,8 +40,7 @@ std::tuple<drivers::NebulaPointCloudPtr, double> SeyondDriver::ParseCloudPacket(
   return pointcloud;
 }
 
-bool SeyondDriver::PeekCloudPacket(
-  const std::vector<uint8_t> & packet)
+bool SeyondDriver::PeekCloudPacket(const std::vector<uint8_t> & packet)
 {
   auto logger = rclcpp::get_logger("SeyondDriver");
 
@@ -52,7 +51,6 @@ bool SeyondDriver::PeekCloudPacket(
   scan_decoder_->unpack(packet, false);
   return scan_decoder_->hasScanned();
 }
-  
 
 Status SeyondDriver::SetCalibrationConfiguration(
   const SeyondCalibrationConfiguration & calibration_configuration)

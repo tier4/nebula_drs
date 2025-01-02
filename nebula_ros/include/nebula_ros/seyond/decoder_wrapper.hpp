@@ -29,6 +29,9 @@ using get_calibration_result_t =
 
 class SeyondDecoderWrapper
 {
+  using get_calibration_result_t = nebula::util::expected<
+    std::shared_ptr<drivers::SeyondCalibrationConfiguration>, nebula::Status>;
+
 public:
   SeyondDecoderWrapper(
     rclcpp::Node * const parent_node, const std::shared_ptr<SeyondHwInterface> & hw_interface,
@@ -41,6 +44,9 @@ public:
   nebula::Status Status();
 
 private:
+
+  get_calibration_result_t GetCalibrationData(const std::string & calibration_file_path);
+
   void PublishCloud(
     std::unique_ptr<sensor_msgs::msg::PointCloud2> pointcloud,
     const rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr & publisher);

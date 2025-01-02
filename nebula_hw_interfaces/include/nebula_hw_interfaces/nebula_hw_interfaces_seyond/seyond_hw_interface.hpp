@@ -44,6 +44,7 @@ private:
   std::unique_ptr<::drivers::common::IoContext> cloud_io_context_;
   std::unique_ptr<::drivers::udp_driver::UdpDriver> cloud_udp_driver_;
   std::shared_ptr<const SeyondSensorConfiguration> sensor_configuration_;
+  std::shared_ptr<const SeyondCalibrationConfiguration> calibration_configuration_;
   std::function<void(std::vector<uint8_t> & buffer)>
     cloud_packet_callback_; /**This function pointer is called when the scan is complete*/
 
@@ -105,6 +106,16 @@ public:
   /// @return Resulting status
   Status GetCalibrationConfiguration(
     const CalibrationConfigurationBase & calibration_configuration);
+
+  /// @brief Setting calibration configuration
+  /// @param calibration_configuration CalibrationConfiguration for setting
+  /// @return Resulting status
+  // Status SetCalibrationConfiguration(
+  //   const std::shared_ptr<const CalibrationConfigurationBase> & calibration_configuration);
+
+  /// @brief Get calibration data with HTTP interface
+  /// @return Resulting string
+  std::string GetLidarCalibrationString();
 
   /// @brief Setting sensor configuration
   /// @param sensor_configuration SensorConfiguration for this interface

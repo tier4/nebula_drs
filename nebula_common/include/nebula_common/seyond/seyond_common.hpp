@@ -47,15 +47,68 @@ inline std::ostream & operator<<(std::ostream & os, SeyondSensorConfiguration co
   return os;
 }
 
-struct SeyondCalibrationConfigurationBase : public CalibrationConfigurationBase
-{
-};
-
 /// @brief struct for Seyond calibration configuration
-struct SeyondCalibrationConfiguration : public SeyondCalibrationConfigurationBase
+struct SeyondCalibrationConfiguration : public LidarConfigurationBase
 {
   std::map<size_t, float> elev_angle_map;
   std::map<size_t, float> azimuth_offset_map;
+  std::string calibration_data{};
+
+  inline nebula::Status LoadFromFile(const std::string & calibration_file)
+  {
+    std::ifstream ifs(calibration_file);
+    if (!ifs) {
+      return Status::INVALID_CALIBRATION_FILE;
+    }
+    std::ostringstream ss;
+    ss << ifs.rdbuf();  // reading data
+    ifs.close();
+    return LoadFromString(ss.str());
+  }
+
+  /// @brief Loading calibration data
+  /// @param calibration_content
+  /// @return Resulting status
+  inline nebula::Status LoadFromString(const std::string & calibration_content)
+  {
+    calibration_data = calibration_content;
+    return Status::OK;
+  }
+
+  /// @brief Saving calibration data (not used)
+  /// @param calibration_file
+  /// @return Resulting status
+  inline nebula::Status SaveToFile(const std::string & calibration_file)
+  {
+    std::ofstream ofs(calibration_file);
+    if (!ofs) {
+      return Status::CANNOT_SAVE_FILE;
+    }
+    ofs << calibration_data;
+    ofs.close();
+    return Status::OK;
+  }
+
+  inline std::string GetCalibrationString() const
+  {
+    return calibration_data;
+  }
+
+  /// @brief Saving calibration data from string
+  /// @param calibration_file path
+  /// @param calibration_string calibration string
+  /// @return Resulting status
+  inline nebula::Status SaveFileFromString(
+    const std::string & calibration_file, const std::string & calibration_string)
+  {
+    std::ofstream ofs(calibration_file);
+    if (!ofs) {
+      return Status::CANNOT_SAVE_FILE;
+    }
+    ofs << calibration_string;
+    ofs.close();
+    return Status::OK;
+  }
 };
 
 /*
