@@ -48,9 +48,9 @@ void AevaAeries2Decoder::processPointcloudMessage(const aeva::PointCloudMessage 
     point.distance = raw_point.range.value();
     // raw azimuth value from sensor:
     //  - normalized by 90deg
-    //  - apparently starts from +x axis and increases along with the counter clockwise
-    // point.asimuth:
-    //  - starts from +y axis and increases along with the clockwise
+    //  - apparently starts from +x axis and increases in counter clockwise direction
+    // point.azimuth:
+    //  - starts from +y axis and increases in clockwise direction
     point.azimuth = M_PI_2 - raw_point.azimuth.value() * M_PI_2;
     point.elevation = raw_point.elevation.value() * M_PI_4;
 
