@@ -55,6 +55,7 @@ private:
   rclcpp::Logger logger_;
 
   bool decode_{};
+  bool use_receive_timestamp_{};
 
   const std::shared_ptr<SeyondHwInterface> hw_interface_;
   std::shared_ptr<const SeyondSensorConfiguration> sensor_cfg_;
