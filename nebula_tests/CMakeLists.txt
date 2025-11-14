@@ -22,6 +22,7 @@ elseif(${ROS_DISTRO} STREQUAL "humble")
 endif()
 
 find_package(ament_cmake_auto REQUIRED)
+find_package(diagnostic_updater REQUIRED)
 find_package(nebula_common REQUIRED)
 find_package(nebula_decoders REQUIRED)
 find_package(nebula_hw_interfaces REQUIRED)
@@ -41,6 +42,7 @@ if(BUILD_TESTING)
 
     set(NEBULA_TEST_INCLUDE_DIRS
         ./
+        ${diagnostic_updater_INCLUDE_DIRS}
         ${nebula_common_INCLUDE_DIRS}
         ${nebula_decoders_INCLUDE_DIRS}
         ${nebula_hw_interfaces_INCLUDE_DIRS}
@@ -50,6 +52,7 @@ if(BUILD_TESTING)
     )
 
     set(COMMON_TEST_LIBRARIES
+        ${diagnostic_updater_TARGETS}
         ${nebula_common_TARGETS}
         ${PCL_LIBRARIES}
         ${rosbag2_cpp_TARGETS}
