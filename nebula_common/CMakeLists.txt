@@ -6,10 +6,14 @@ find_package(PCL REQUIRED COMPONENTS common)
 find_package(yaml-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
-# Default to C++17
+# Require C++17 or higher (default to 17 if not set)
 if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 17)
+elseif (CMAKE_CXX_STANDARD LESS 17)
+    message(FATAL_ERROR "CMAKE_CXX_STANDARD must be at least 17, but got ${CMAKE_CXX_STANDARD}")
 endif ()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wall -Wextra -Wpedantic -Wunused-function)
