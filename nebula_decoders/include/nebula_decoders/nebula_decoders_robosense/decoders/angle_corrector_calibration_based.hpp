@@ -1,9 +1,24 @@
+// Copyright 2024 TIER IV, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #pragma once
 
 #include "nebula_common/robosense/robosense_common.hpp"
 #include "nebula_decoders/nebula_decoders_robosense/decoders/angle_corrector.hpp"
 
 #include <cstdint>
+#include <memory>
 
 namespace nebula
 {
@@ -27,7 +42,7 @@ private:
 
 public:
   explicit AngleCorrectorCalibrationBased(
-    const std::shared_ptr<RobosenseCalibrationConfiguration> & sensor_calibration)
+    const std::shared_ptr<const RobosenseCalibrationConfiguration> & sensor_calibration)
   : AngleCorrector(sensor_calibration)
   {
     if (sensor_calibration == nullptr) {

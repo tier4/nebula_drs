@@ -1,24 +1,41 @@
+// Copyright 2024 TIER IV, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #ifndef NEBULA_HESAI_COMMON_H
 #define NEBULA_HESAI_COMMON_H
 
 #include "nebula_common/nebula_common.hpp"
 #include "nebula_common/nebula_status.hpp"
 
-#include <bitset>
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <sstream>
+#include <string>
+#include <vector>
 namespace nebula
 {
 namespace drivers
 {
 /// @brief struct for Hesai sensor configuration
-struct HesaiSensorConfiguration : LidarConfigurationBase
+struct HesaiSensorConfiguration : public LidarConfigurationBase
 {
   uint16_t gnss_port{};
   double scan_phase{};
   double dual_return_distance_threshold{};
+  std::string calibration_path{};
   uint16_t rotation_speed;
   uint16_t cloud_min_angle;
   uint16_t cloud_max_angle;
@@ -33,32 +50,51 @@ struct HesaiSensorConfiguration : LidarConfigurationBase
 /// @return stream
 inline std::ostream & operator<<(std::ostream & os, HesaiSensorConfiguration const & arg)
 {
-  os << (LidarConfigurationBase)(arg) << ", GnssPort: " << arg.gnss_port
-     << ", ScanPhase:" << arg.scan_phase << ", RotationSpeed:" << arg.rotation_speed
-     << ", FOV(Start):" << arg.cloud_min_angle << ", FOV(End):" << arg.cloud_max_angle
-     << ", DualReturnDistanceThreshold:" << arg.dual_return_distance_threshold
-     << ", PtpProfile:" << arg.ptp_profile << ", PtpDomain:" << std::to_string(arg.ptp_domain)
-     << ", PtpTransportType:" << arg.ptp_transport_type
-     << ", PtpSwitchType:" << arg.ptp_switch_type;
+  os << "Hesai Sensor Configuration:" << '\n';
+  os << (LidarConfigurationBase)(arg) << '\n';
+  os << "GNSS Port: " << arg.gnss_port << '\n';
+  os << "Scan Phase: " << arg.scan_phase << '\n';
+  os << "Rotation Speed: " << arg.rotation_speed << '\n';
+  os << "FoV Start: " << arg.cloud_min_angle << '\n';
+  os << "FoV End: " << arg.cloud_max_angle << '\n';
+  os << "Dual Return Distance Threshold: " << arg.dual_return_distance_threshold << '\n';
+  os << "PTP Profile: " << arg.ptp_profile << '\n';
+  os << "PTP Domain: " << std::to_string(arg.ptp_domain) << '\n';
+  os << "PTP Transport Type: " << arg.ptp_transport_type << '\n';
+  os << "PTP Switch Type: " << arg.ptp_switch_type;
   return os;
 }
 
+struct HesaiCalibrationConfigurationBase : public CalibrationConfigurationBase
+{
+  virtual nebula::Status LoadFromBytes(const std::vector<uint8_t> & buf) = 0;
+  virtual nebula::Status LoadFromFile(const std::string & calibration_file) = 0;
+  virtual nebula::Status SaveToFileFromBytes(
+    const std::string & calibration_file, const std::vector<uint8_t> & buf) = 0;
+};
+
 /// @brief struct for Hesai calibration configuration
-struct HesaiCalibrationConfiguration : CalibrationConfigurationBase
+struct HesaiCalibrationConfiguration : public HesaiCalibrationConfigurationBase
 {
   std::map<size_t, float> elev_angle_map;
   std::map<size_t, float> azimuth_offset_map;
 
-  inline nebula::Status LoadFromFile(const std::string & calibration_file)
+  inline nebula::Status LoadFromFile(const std::string & calibration_file) override
   {
     std::ifstream ifs(calibration_file);
     if (!ifs) {
       return Status::INVALID_CALIBRATION_FILE;
     }
     std::ostringstream ss;
-    ss << ifs.rdbuf(); // reading data
+    ss << ifs.rdbuf();  // reading data
     ifs.close();
     return LoadFromString(ss.str());
+  }
+
+  nebula::Status LoadFromBytes(const std::vector<uint8_t> & buf) override
+  {
+    std::string calibration_string = std::string(buf.begin(), buf.end());
+    return LoadFromString(calibration_string);
   }
 
   /// @brief Loading calibration data
@@ -70,15 +106,13 @@ struct HesaiCalibrationConfiguration : CalibrationConfigurationBase
     ss << calibration_content;
     std::string line;
     constexpr size_t expected_cols = 3;
-    while(std::getline(ss, line)) {
+    while (std::getline(ss, line)) {
       boost::char_separator<char> sep(",");
       boost::tokenizer<boost::char_separator<char>> tok(line, sep);
 
       std::vector<std::string> actual_tokens(tok.begin(), tok.end());
-      if (actual_tokens.size() < expected_cols
-        || actual_tokens.size() > expected_cols
-        ) {
-        std::cerr << "Ignoring line with unexpected data:" << line << std::endl;
+      if (actual_tokens.size() < expected_cols || actual_tokens.size() > expected_cols) {
+        std::cerr << "Ignoring line with unexpected data: " << line << std::endl;
         continue;
       }
 
@@ -88,10 +122,9 @@ struct HesaiCalibrationConfiguration : CalibrationConfigurationBase
         float azimuth = std::stof(actual_tokens[2]);
         elev_angle_map[laser_id - 1] = elevation;
         azimuth_offset_map[laser_id - 1] = azimuth;
-      } catch (const std::invalid_argument& ia) {
+      } catch (const std::invalid_argument & ia) {
         continue;
       }
-
     }
     return Status::OK;
   }
@@ -99,7 +132,7 @@ struct HesaiCalibrationConfiguration : CalibrationConfigurationBase
   /// @brief Saving calibration data (not used)
   /// @param calibration_file
   /// @return Resulting status
-  inline nebula::Status SaveFile(const std::string & calibration_file)
+  inline nebula::Status SaveToFile(const std::string & calibration_file)
   {
     std::ofstream ofs(calibration_file);
     if (!ofs) {
@@ -117,11 +150,19 @@ struct HesaiCalibrationConfiguration : CalibrationConfigurationBase
     return Status::OK;
   }
 
+  nebula::Status SaveToFileFromBytes(
+    const std::string & calibration_file, const std::vector<uint8_t> & buf) override
+  {
+    std::string calibration_string = std::string(buf.begin(), buf.end());
+    return SaveFileFromString(calibration_file, calibration_string);
+  }
+
   /// @brief Saving calibration data from string
   /// @param calibration_file path
   /// @param calibration_string calibration string
   /// @return Resulting status
-  inline nebula::Status SaveFileFromString(const std::string & calibration_file, const std::string & calibration_string)
+  inline nebula::Status SaveFileFromString(
+    const std::string & calibration_file, const std::string & calibration_string)
   {
     std::ofstream ofs(calibration_file);
     if (!ofs) {
@@ -134,7 +175,7 @@ struct HesaiCalibrationConfiguration : CalibrationConfigurationBase
 };
 
 /// @brief struct for Hesai correction configuration (for AT)
-struct HesaiCorrection
+struct HesaiCorrection : public HesaiCalibrationConfigurationBase
 {
   uint16_t delimiter;
   uint8_t versionMajor;
@@ -156,12 +197,11 @@ struct HesaiCorrection
   /// @brief Load correction data from file
   /// @param buf Binary buffer
   /// @return Resulting status
-  inline nebula::Status LoadFromBinary(const std::vector<uint8_t> & buf)
+  inline nebula::Status LoadFromBytes(const std::vector<uint8_t> & buf) override
   {
     size_t index;
-    for (index = 0; index < buf.size()-1; index++) {
-      if(buf[index]==0xee && buf[index+1]==0xff)
-        break;
+    for (index = 0; index < buf.size() - 1; index++) {
+      if (buf[index] == 0xee && buf[index + 1] == 0xff) break;
     }
     delimiter = (buf[index] & 0xff) << 8 | ((buf[index + 1] & 0xff));
     versionMajor = buf[index + 2] & 0xff;
@@ -258,7 +298,7 @@ struct HesaiCorrection
   /// @brief Load correction data from file
   /// @param correction_file path
   /// @return Resulting status
-  inline nebula::Status LoadFromFile(const std::string & correction_file)
+  inline nebula::Status LoadFromFile(const std::string & correction_file) override
   {
     std::ifstream ifs(correction_file, std::ios::in | std::ios::binary);
     if (!ifs) {
@@ -268,10 +308,10 @@ struct HesaiCorrection
     //    int cnt = 0;
     while (!ifs.eof()) {
       unsigned char c;
-      ifs.read((char *)&c, sizeof(unsigned char));
+      ifs.read(reinterpret_cast<char *>(&c), sizeof(unsigned char));
       buf.emplace_back(c);
     }
-    LoadFromBinary(buf);
+    LoadFromBytes(buf);
 
     ifs.close();
     return Status::OK;
@@ -281,31 +321,31 @@ struct HesaiCorrection
   /// @param correction_file path
   /// @param buf correction binary
   /// @return Resulting status
-  inline nebula::Status SaveFileFromBinary(const std::string & correction_file, const std::vector<uint8_t> & buf)
+  inline nebula::Status SaveToFileFromBytes(
+    const std::string & correction_file, const std::vector<uint8_t> & buf) override
   {
-    std::cerr << "Saving in:" << correction_file << "\n";
+    std::cerr << "Saving in: " << correction_file << "\n";
     std::ofstream ofs(correction_file, std::ios::trunc | std::ios::binary);
     if (!ofs) {
-      std::cerr << "Could not create file:" << correction_file << "\n";
+      std::cerr << "Could not create file: " << correction_file << "\n";
       return Status::CANNOT_SAVE_FILE;
     }
     std::cerr << "Writing start...." << buf.size() << "\n";
     bool sop_received = false;
-    for (const auto &byte : buf) {
+    for (const auto & byte : buf) {
       if (!sop_received) {
         if (byte == 0xEE) {
           std::cerr << "SOP received....\n";
           sop_received = true;
         }
       }
-      if(sop_received) {
+      if (sop_received) {
         ofs << byte;
       }
     }
     std::cerr << "Closing file\n";
     ofs.close();
-    if(sop_received)
-      return Status::OK;
+    if (sop_received) return Status::OK;
     return Status::INVALID_CALIBRATION_FILE;
   }
 
@@ -435,8 +475,8 @@ inline int IntFromReturnModeHesai(const ReturnMode return_mode, const SensorMode
     case SensorModel::HESAI_PANDARQT128:
       if (return_mode == ReturnMode::LAST) return 0;
       if (return_mode == ReturnMode::STRONGEST) return 1;
-      if (return_mode == ReturnMode::DUAL_LAST_STRONGEST
-      || return_mode == ReturnMode::DUAL) return 2;
+      if (return_mode == ReturnMode::DUAL_LAST_STRONGEST || return_mode == ReturnMode::DUAL)
+        return 2;
       if (return_mode == ReturnMode::FIRST) return 3;
       if (return_mode == ReturnMode::DUAL_LAST_FIRST) return 4;
       if (return_mode == ReturnMode::DUAL_FIRST_STRONGEST) return 5;

@@ -23,9 +23,17 @@ srv/_*.py
 .mkdoxy/
 *.wikidoc
 site/
+
 # eclipse stuff
 .project
 .cproject
 
 # qcreator stuff
 CMakeLists.txt.user
+
+# pre-commit
+node_modules/
+
+# Dependencies
+ros2_socketcan/
+transport_drivers/

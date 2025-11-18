@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="launch_hw" default="true" />
+    <arg name="publish_pointcloud" default="true" />
+    <arg name="sensor_model" description="Falcon|RobinW"/>
+    <arg name="return_mode" default="Dual" description="See readme for supported return modes"/>
+    <arg name="frame_id"  default="seyond"/>
+    <arg name="scan_phase" default="0.0" />
+    <arg name="sensor_ip" default="172.168.1.10" description="Lidar Sensor IP"/>
+    <arg name="host_ip" default="172.168.1.170" description="Broadcast IP from Sensor"/>
+    <arg name="data_port" default="8010" description="LiDAR Data Port"/>
+    <arg name="ptp_profile" default="1588v2" description="1588v2|802.1as|automotive"/>
+    <arg name="ptp_transport_type" default="UDP" description="1588v2 supports 'UDP' or 'L2', other profiles only L2 (HW)"/>
+    <arg name="ptp_switch_type" default="TSN" description="For automotive profile,'TSN' or 'NON_TSN'"/>
+    <arg name="setup_sensor" default="True" description="Enable sensor setup on hw-driver"/>
+    <arg name="retry_hw" default="True" description="hw driver startup retry (false when using pcap)"/>
+    <arg name="debug_logging" default="False" description="Launches Monitor/HW Interfaces and calibration acquisition"/>
+    <arg name="calibration_file_path" default=""/>
+
+    <let name="debug_level" value="debug" if="$(eval $(var debug_logging))"/>
+    <let name="debug_level" value="info" unless="$(eval $(var debug_logging))"/>
+
+    <node pkg="nebula_ros" exec="seyond_ros_wrapper_node"
+        name="seyond" output="screen">
+        <param name="sensor_model" value="$(var sensor_model)"/>
+        <param name="return_mode" value="$(var return_mode)"/>
+        <param name="frame_id" value="$(var frame_id)"/>
+        <param name="scan_phase" value="$(var scan_phase)"/>
+        <param name="sensor_ip" value="$(var sensor_ip)"/>
+        <param name="launch_hw" value="$(var launch_hw)"/>
+        <param name="publish_pointcloud" value="$(var publish_pointcloud)"/>
+        <param name="host_ip" value="$(var host_ip)"/>
+        <param name="data_port" value="$(var data_port)"/>
+        <param name="setup_sensor" value="$(var setup_sensor)"/>
+        <param name="retry_hw" value="$(var retry_hw)"/>
+        <param name="ptp_profile" value="$(var ptp_profile)"/>
+        <param name="ptp_transport_type" value="$(var ptp_transport_type)"/>
+        <param name="ptp_switch_type" value="$(var ptp_switch_type)"/>
+        <param name="calibration_file_path" value="$(var calibration_file_path)"/>
+    </node>
+</launch>

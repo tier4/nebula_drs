@@ -1,3 +1,17 @@
+// Copyright 2024 TIER IV, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #pragma once
 
 #include <cstddef>
@@ -190,7 +204,7 @@ struct PacketBase
 /// @brief Get the number of returns for a given return mode
 /// @param return_mode The return mode
 /// @return The number of returns
-int get_n_returns(uint8_t return_mode)
+inline int get_n_returns(uint8_t return_mode)
 {
   switch (return_mode) {
     case return_mode::SINGLE_FIRST:
@@ -221,7 +235,8 @@ uint64_t get_timestamp_ns(const PacketT & packet)
   return packet.tail.date_time.get_seconds() * 1000000000 + packet.tail.timestamp * 1000;
 }
 
-/// @brief Get the distance unit of the given packet type in meters. Distance values in the packet, multiplied by this value, yield the distance in meters.
+/// @brief Get the distance unit of the given packet type in meters. Distance values in the packet,
+/// multiplied by this value, yield the distance in meters.
 /// @tparam PacketT The packet type
 /// @param packet The packet to get the distance unit from
 /// @return The distance unit in meters
