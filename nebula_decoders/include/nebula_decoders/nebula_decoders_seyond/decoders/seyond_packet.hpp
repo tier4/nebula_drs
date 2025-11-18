@@ -147,9 +147,9 @@ static const uint8_t kSeyondMinorVersionStatusPacket = 0;
 static const uint32_t kSeyondDistanceUnitPerMeter = 400;
 static const double kMeterPerSeyondDistanceUnit = 1.0 / kSeyondDistanceUnitPerMeter;
 static const double kMeterPerSeyondDistanceUnit200 =
-  1.0 / kSeyondDistanceUnitPerMeter200;  // falconIGK
+  1.0 / static_cast<double>(kSeyondDistanceUnitPerMeter200);  // falconIGK
 static const double kMeterPerSeyondDistanceUnit400 =
-  1.0 / kSeyondDistanceUnitPerMeter400;  // robin & falcon2.1
+  1.0 / static_cast<double>(kSeyondDistanceUnitPerMeter400);  // robin & falcon2.1
 static const uint32_t kSeyondDegreePerPiRad = 180;
 static const uint32_t kSeyondAngleUnitPerPiRad = 32768;
 static const double kRadPerSeyondAngleUnit = M_PI / kSeyondAngleUnitPerPiRad;
