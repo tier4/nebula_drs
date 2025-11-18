@@ -53,8 +53,9 @@ bool SeyondDriver::PeekCloudPacket(const std::vector<uint8_t> & packet)
 }
 
 Status SeyondDriver::SetCalibrationConfiguration(
-  const SeyondCalibrationConfiguration & calibration_configuration)
+  const SeyondCalibrationConfiguration & /* calibration_configuration */)
 {
+  return Status::OK;
 }
 
 Status SeyondDriver::GetStatus()
