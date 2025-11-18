@@ -532,13 +532,13 @@ typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondCoBlock2)
 SeyondCoBlock2;
 DEFINE_SEYOND_COMPACT_STRUCT_END
 
-static inline size_t seyondblock_get_idx(size_t channel, size_t r)
+__attribute__((used)) static inline size_t seyondblock_get_idx(size_t channel, size_t r)
 {
   /* r0_ch0 r0_ch1 r0_ch2 r0_ch3 r1_ch0 r1_ch1 r1_ch2 r1_ch3 */
   return channel + (r << kSeyondChannelNumberBit);
 }
 
-static inline size_t seyondcoblock_get_idx(size_t channel, size_t r)
+__attribute__((used)) static inline size_t seyondcoblock_get_idx(size_t channel, size_t r)
 {
   /* r0_ch0 r0_ch1 r0_ch2 r0_ch3 r0_ch4 r0_ch5 r0_ch6 r0_ch7
      r1_ch0 r1_ch1 r1_ch2 r1_ch3 r1_ch4 r1_ch5 r1_ch6 r1_ch7 */
