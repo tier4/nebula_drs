@@ -44,7 +44,6 @@ public:
   nebula::Status Status();
 
 private:
-
   get_calibration_result_t GetCalibrationData(const std::string & calibration_file_path);
 
   void PublishCloud(

@@ -160,7 +160,7 @@ rclcpp_components_register_node(robosense_ros_wrapper
 #     ${tf2_ros_INCLUDE_DIRS}
 #     ${visualization_msgs_INCLUDE_DIRS}
 # )
-# 
+#
 # target_link_libraries(continental_ars548_ros_wrapper PUBLIC
 #     ${continental_msgs_TARGETS}
 #     ${continental_srvs_TARGETS}
@@ -173,12 +173,12 @@ rclcpp_components_register_node(robosense_ros_wrapper
 #     nebula_decoders::nebula_decoders_continental
 #     nebula_hw_interfaces::nebula_hw_interfaces_continental
 # )
-# 
+#
 # rclcpp_components_register_node(continental_ars548_ros_wrapper
 #     PLUGIN "ContinentalARS548RosWrapper"
 #     EXECUTABLE continental_ars548_ros_wrapper_node
 # )
-# 
+#
 # # SRR520
 # add_library(continental_srr520_ros_wrapper SHARED
 #     src/continental/continental_srr520_ros_wrapper.cpp
@@ -186,7 +186,7 @@ rclcpp_components_register_node(robosense_ros_wrapper
 #     src/continental/continental_srr520_hw_interface_wrapper.cpp
 #     src/common/parameter_descriptors.cpp
 # )
-# 
+#
 # target_include_directories(continental_srr520_ros_wrapper PUBLIC
 #     ${continental_msgs_INCLUDE_DIRS}
 #     ${continental_srvs_INCLUDE_DIRS}
@@ -200,7 +200,7 @@ rclcpp_components_register_node(robosense_ros_wrapper
 #     ${tf2_ros_INCLUDE_DIRS}
 #     ${visualization_msgs_INCLUDE_DIRS}
 # )
-# 
+#
 # target_link_libraries(continental_srr520_ros_wrapper PUBLIC
 #     ${continental_msgs_TARGETS}
 #     ${continental_srvs_TARGETS}
@@ -213,7 +213,7 @@ rclcpp_components_register_node(robosense_ros_wrapper
 #     nebula_decoders::nebula_decoders_continental
 #     nebula_hw_interfaces::nebula_hw_interfaces_continental
 # )
-# 
+#
 # rclcpp_components_register_node(continental_srr520_ros_wrapper
 #     PLUGIN "ContinentalSRR520RosWrapper"
 #     EXECUTABLE continental_srr520_ros_wrapper_node

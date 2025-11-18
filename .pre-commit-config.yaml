@@ -82,12 +82,31 @@ repos:
     rev: v18.1.5
     hooks:
       - id: clang-format
+        types: [c++, c, cuda]
+        exclude: |
+          (?x)^(
+            build/|
+            install/|
+            log/|
+            .*\.(mcap|db3|pcd|bag|bagdb|bin|so|a|o|dylib|dll|exe)|
+            transport_drivers/|
+            ros2_socketcan/|
+          )
 
   - repo: https://github.com/cpplint/cpplint
     rev: 1.6.1
     hooks:
       - id: cpplint
         args: [--quiet]
-        exclude: .cu
+        types: [c++, c, cuda]
+        exclude: |
+          (?x)^(
+            build/|
+            install/|
+            log/|
+            .*\.(mcap|db3|pcd|bag|bagdb|bin|so|a|o|dylib|dll|exe)|
+            transport_drivers/|
+            ros2_socketcan/|
+          )
 
 exclude: .svg

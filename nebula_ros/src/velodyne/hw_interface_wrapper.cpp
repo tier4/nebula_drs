@@ -21,15 +21,13 @@ VelodyneHwInterfaceWrapper::VelodyneHwInterfaceWrapper(
   status_ = hw_interface_->InitializeSensorConfiguration(config);
 
   if (status_ != Status::OK) {
-    throw std::runtime_error(
-      "Could not initialize HW interface");
+    throw std::runtime_error("Could not initialize HW interface");
   }
 
   status_ = hw_interface_->InitHttpClient();
 
   if (status_ != Status::OK) {
-    throw std::runtime_error(
-      "Could not initialize HTTP client");
+    throw std::runtime_error("Could not initialize HTTP client");
   }
 
   if (setup_sensor_) {
@@ -38,8 +36,7 @@ VelodyneHwInterfaceWrapper::VelodyneHwInterfaceWrapper(
   }
 
   if (status_ != Status::OK) {
-    throw std::runtime_error(
-      "Could not set sensor configuration");
+    throw std::runtime_error("Could not set sensor configuration");
   }
 
   status_ = Status::OK;

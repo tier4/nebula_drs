@@ -21,9 +21,9 @@
 
 #include <array>
 #include <cstdint>
+#include <iomanip>
 #include <ostream>
 #include <string>
-#include <iomanip>
 
 using namespace boost::endian;  // NOLINT(build/namespaces)
 

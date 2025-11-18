@@ -166,8 +166,7 @@ void SeyondDecoderWrapper::ProcessCloudPacket(
                              .count();
         if (use_receive_timestamp_) {
           ros_pc_msg_ptr->header.stamp = packet_msg->stamp;
-        }
-        else{
+        } else {
           ros_pc_msg_ptr->header.stamp = rclcpp::Time(nanoseconds);
         }
         PublishCloud(std::move(ros_pc_msg_ptr), nebula_points_pub_);

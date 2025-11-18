@@ -28,8 +28,7 @@ VelodyneDecoderWrapper::VelodyneDecoderWrapper(
   auto calibration_result = GetCalibrationData(calibration_file_path_);
 
   if (!calibration_result.has_value()) {
-    throw std::runtime_error(
-      "No valid calibration found");
+    throw std::runtime_error("No valid calibration found");
   }
 
   calibration_cfg_ptr_ = calibration_result.value();
@@ -42,8 +41,7 @@ VelodyneDecoderWrapper::VelodyneDecoderWrapper(
   status_ = driver_ptr_->GetStatus();
 
   if (Status::OK != status_) {
-    throw std::runtime_error(
-      "Error instantiating decoder");
+    throw std::runtime_error("Error instantiating decoder");
   }
 
   // Publish packets only if HW interface is connected
@@ -117,8 +115,7 @@ rcl_interfaces::msg::SetParametersResult VelodyneDecoderWrapper::OnParameterChan
   if (!get_calibration_result.has_value()) {
     auto result = SetParametersResult();
     result.successful = false;
-    result.reason =
-      "Could not change calibration file to";
+    result.reason = "Could not change calibration file to";
     return result;
   }
 

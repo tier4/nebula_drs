@@ -22,8 +22,7 @@ HesaiRosWrapper::HesaiRosWrapper(const rclcpp::NodeOptions & options)
   wrapper_status_ = DeclareAndGetSensorConfigParams();
 
   if (wrapper_status_ != Status::OK) {
-    throw std::runtime_error(
-      "Sensor configuration invalid");
+    throw std::runtime_error("Sensor configuration invalid");
   }
 
   RCLCPP_INFO_STREAM(get_logger(), "Sensor Configuration: " << *sensor_cfg_ptr_);

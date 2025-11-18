@@ -89,10 +89,7 @@ struct SeyondCalibrationConfiguration : public LidarConfigurationBase
     return Status::OK;
   }
 
-  inline std::string GetCalibrationString() const
-  {
-    return calibration_data;
-  }
+  inline std::string GetCalibrationString() const { return calibration_data; }
 
   /// @brief Saving calibration data from string
   /// @param calibration_file path

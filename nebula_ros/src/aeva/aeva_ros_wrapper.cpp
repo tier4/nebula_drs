@@ -51,8 +51,7 @@ AevaRosWrapper::AevaRosWrapper(const rclcpp::NodeOptions & options)
   auto status = declareAndGetSensorConfigParams();
 
   if (status != Status::OK) {
-    throw std::runtime_error(
-      "Sensor configuration invalid");
+    throw std::runtime_error("Sensor configuration invalid");
   }
 
   RCLCPP_INFO_STREAM(get_logger(), "SensorConfig: " << *sensor_cfg_ptr_);

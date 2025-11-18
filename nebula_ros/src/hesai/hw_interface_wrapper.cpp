@@ -21,8 +21,7 @@ HesaiHwInterfaceWrapper::HesaiHwInterfaceWrapper(
     std::static_pointer_cast<const drivers::SensorConfigurationBase>(config));
 
   if (status_ != Status::OK) {
-    throw std::runtime_error(
-      "Could not initialize HW interface");
+    throw std::runtime_error("Could not initialize HW interface");
   }
 
   hw_interface_->SetLogger(std::make_shared<rclcpp::Logger>(parent_node->get_logger()));

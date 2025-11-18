@@ -164,12 +164,13 @@ static const uint32_t kSeyondCompactChannelNumberBit = SEYOND_COMPACT_CHANNEL_NU
 static const uint32_t kSeyondCompactChannelNumber = SEYOND_COMPACT_CHANNEL_NUMBER;
 
 static const int kPolygonMaxFacets = 4;
-static const int kPolygonMinAngle = - (45 * kSeyondAngleUnitPerPiRad / kSeyondDegreePerPiRad);
+static const int kPolygonMinAngle = -(45 * kSeyondAngleUnitPerPiRad / kSeyondDegreePerPiRad);
 static const int kPolygonMaxAngle = 45 * kSeyondAngleUnitPerPiRad / kSeyondDegreePerPiRad;
 static const int kEncoderTableShift = 8;  // table resolution
 static const int kEncoderTableStep = 1 << kEncoderTableShift;
 static const int kEncoderTableMask = kEncoderTableStep - 1;
-static const int kPolygonTableSize = ((kPolygonMaxAngle - kPolygonMinAngle) >> kEncoderTableShift) + 1;
+static const int kPolygonTableSize =
+  ((kPolygonMaxAngle - kPolygonMinAngle) >> kEncoderTableShift) + 1;
 static const int kMaxSet = 6;
 static const uint32_t kMaxReceiverInSet = kSeyondCompactChannelNumber;
 
