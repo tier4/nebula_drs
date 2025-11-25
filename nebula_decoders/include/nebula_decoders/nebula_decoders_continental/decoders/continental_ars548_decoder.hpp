@@ -23,7 +23,9 @@
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <nebula_msgs/msg/nebula_packet.hpp>
 #include <nebula_msgs/msg/nebula_packets.hpp>
+
 #include <boost/endian/buffers.hpp>
+
 #include <array>
 #include <memory>
 #include <vector>

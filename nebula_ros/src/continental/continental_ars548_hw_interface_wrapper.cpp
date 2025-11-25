@@ -166,7 +166,7 @@ void ContinentalARS548HwInterfaceWrapper::SetNetworkConfigurationRequestCallback
 {
   auto result = hw_interface_->SetSensorIPAddress(request->sensor_ip.data);
   response->success = result == Status::OK;
-  //response->message = (std::stringstream() << result).str();
+  // response->message = (std::stringstream() << result).str();
 }
 
 void ContinentalARS548HwInterfaceWrapper::SetSensorMountingRequestCallback(
@@ -219,7 +219,7 @@ void ContinentalARS548HwInterfaceWrapper::SetSensorMountingRequestCallback(
     longitudinal, lateral, vertical, yaw, pitch, request->plug_orientation);
 
   response->success = result == Status::OK;
-  //response->message = (std::stringstream() << result).str();
+  // response->message = (std::stringstream() << result).str();
 }
 
 void ContinentalARS548HwInterfaceWrapper::SetVehicleParametersRequestCallback(
@@ -266,7 +266,7 @@ void ContinentalARS548HwInterfaceWrapper::SetVehicleParametersRequestCallback(
     vehicle_length, vehicle_width, vehicle_height, vehicle_wheelbase);
 
   response->success = result == Status::OK;
-  //response->message = (std::stringstream() << result).str();
+  // response->message = (std::stringstream() << result).str();
 }
 
 void ContinentalARS548HwInterfaceWrapper::SetRadarParametersRequestCallback(
@@ -280,7 +280,7 @@ void ContinentalARS548HwInterfaceWrapper::SetRadarParametersRequestCallback(
     request->country_code, request->powersave_standstill);
 
   response->success = result == Status::OK;
-  //response->message = (std::stringstream() << result).str();
+  // response->message = (std::stringstream() << result).str();
 }
 
 }  // namespace ros
