@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #pragma once
 
 #include "nebula_decoders/nebula_decoders_seyond/decoders/nps_adjustment.hpp"
@@ -569,8 +571,8 @@ public:
       } else {
         int8_t * byte_ptr = nullptr;
         std::memcpy(&byte_ptr, &block, sizeof(const Block *));
-        byte_ptr =
-          (int8_t *)(uintptr_t)(byte_ptr + static_cast<uint32_t>(sizeof(int8_t)) * unit_size);
+        byte_ptr = reinterpret_cast<int8_t *>(
+          (uintptr_t)(byte_ptr + static_cast<uint32_t>(sizeof(int8_t)) * unit_size));
         std::memcpy(&block, &byte_ptr, sizeof(const Block *));
       }
       if (block == nullptr) {
@@ -622,8 +624,8 @@ public:
       } else {
         int8_t * byte_ptr = nullptr;
         std::memcpy(&byte_ptr, &block, sizeof(const Block *));
-        byte_ptr =
-          (int8_t *)(uintptr_t)(byte_ptr + static_cast<uint32_t>(sizeof(int8_t)) * unit_size);
+        byte_ptr = reinterpret_cast<int8_t *>(
+          (uintptr_t)(byte_ptr + static_cast<uint32_t>(sizeof(int8_t)) * unit_size));
         std::memcpy(&block, &byte_ptr, sizeof(const Block *));
       }
       if (block == nullptr) {

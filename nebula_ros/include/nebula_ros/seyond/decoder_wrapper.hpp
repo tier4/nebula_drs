@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #pragma once
 
 #include "nebula_ros/common/parameter_descriptors.hpp"
@@ -15,6 +17,7 @@
 #include <filesystem>
 #include <memory>
 #include <mutex>
+#include <string>
 
 namespace nebula
 {

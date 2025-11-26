@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #include "nebula_ros/seyond/hw_interface_wrapper.hpp"
 
 namespace nebula

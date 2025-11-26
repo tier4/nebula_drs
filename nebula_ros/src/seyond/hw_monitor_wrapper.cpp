@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #include "nebula_ros/seyond/hw_monitor_wrapper.hpp"
 
 namespace nebula
@@ -74,7 +76,7 @@ void SeyondHwMonitorWrapper::FetchDiagnosticInfo()
 
 Status SeyondHwMonitorWrapper::Status()
 {
-  return Status::NOT_IMPLEMENTED;  // TODO
+  return Status::NOT_IMPLEMENTED;
 }
 }  // namespace ros
 }  // namespace nebula

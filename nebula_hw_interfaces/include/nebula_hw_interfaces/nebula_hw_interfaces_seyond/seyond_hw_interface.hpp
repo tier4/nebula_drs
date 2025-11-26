@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #ifndef NEBULA_SEYOND_HW_INTERFACE_H
 #define NEBULA_SEYOND_HW_INTERFACE_H
 // Have to define macros to silence warnings about deprecated headers being used by

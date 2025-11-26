@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #include "nebula_decoders/nebula_decoders_seyond/decoders/seyond_decoder.hpp"
 
 #include "nebula_decoders/nebula_decoders_seyond/decoders/seyond_packet.hpp"
@@ -56,7 +58,6 @@ SeyondDecoder::SeyondDecoder(
   setup_table_(kRadPerSeyondAngleUnit);
   init_f();
 
-  // TODO: add to functions
   if (sensor_configuration->sensor_model == nebula::drivers::SensorModel::SEYOND_ROBIN_W) {
     size_t table_packet_size = sizeof(SeyondDataPacket) + sizeof(SeyondAngleHVTable);
     auto * new_anglehv_table = reinterpret_cast<SeyondDataPacket *>(new char[table_packet_size]);
@@ -251,7 +252,7 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
           point.elevation =
             static_cast<float>(full_angles.angles[channel].v_angle * kRadPerSeyondAngleUnit);
           point.distance = radial_distance;
-          // TODO (drwnz): determine correct scaling for intensity mode, more efficinet
+          // TODO(drwnz): determine correct scaling for intensity mode, more efficinet
           // implementation.
           point.intensity = std::ceil(static_cast<double>(pt.refl) * intensity_scaling_factor);
           point.time_stamp = static_cast<uint32_t>(block->header.ts_10us) * 10000;
