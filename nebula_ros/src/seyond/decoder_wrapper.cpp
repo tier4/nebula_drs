@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #include "nebula_ros/seyond/decoder_wrapper.hpp"
 
 #include <cstdint>
@@ -6,8 +8,6 @@ namespace nebula
 {
 namespace ros
 {
-
-using namespace std::chrono_literals;
 
 SeyondDecoderWrapper::SeyondDecoderWrapper(
   rclcpp::Node * const parent_node, const std::shared_ptr<SeyondHwInterface> & hw_interface,
@@ -61,8 +61,8 @@ SeyondDecoderWrapper::SeyondDecoderWrapper(
 
   RCLCPP_INFO_STREAM(logger_, ". Wrapper=" << status_);
 
-  cloud_watchdog_ =
-    std::make_shared<WatchdogTimer>(*parent_node, 110'000us, [this, parent_node](bool ok) {
+  cloud_watchdog_ = std::make_shared<WatchdogTimer>(
+    *parent_node, std::chrono::microseconds(110'000), [this, parent_node](bool ok) {
       if (ok) return;
       RCLCPP_WARN_THROTTLE(
         logger_, *parent_node->get_clock(), 5000, "Missed pointcloud output deadline");

@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #include "nebula_ros/seyond/seyond_ros_wrapper.hpp"
 
 namespace nebula
@@ -238,7 +240,7 @@ rcl_interfaces::msg::SetParametersResult SeyondRosWrapper::OnParameterChange(
   const std::vector<rclcpp::Parameter> & p)
 {
   std::lock_guard lock(mtx_config_);
-  using namespace rcl_interfaces::msg;
+  using rcl_interfaces::msg::SetParametersResult;
 
   if (p.empty()) {
     return rcl_interfaces::build<SetParametersResult>().successful(true).reason("");
