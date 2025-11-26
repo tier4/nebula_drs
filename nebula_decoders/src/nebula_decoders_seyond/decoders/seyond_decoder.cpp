@@ -168,7 +168,7 @@ void SeyondDecoder::ProtocolCompatibility(std::vector<uint8_t> & buffer)
   uint32_t * packet_size = reinterpret_cast<uint32_t *>(&buffer[kSeyondPktSizeSectionIndex]);
 
   if (major_version == kSeyondProtocolMajorV1) {
-    // add 16 bytes to the headr
+    // add 16 bytes to the header
     *packet_size += 16;
     buffer.insert(buffer.begin() + kSeyondProtocolOldHeaderLen, 16, 0);
   }
@@ -252,7 +252,7 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
           point.elevation =
             static_cast<float>(full_angles.angles[channel].v_angle * kRadPerSeyondAngleUnit);
           point.distance = radial_distance;
-          // TODO(drwnz): determine correct scaling for intensity mode, more efficinet
+          // TODO(drwnz): determine correct scaling for intensity mode, more efficient
           // implementation.
           point.intensity = std::ceil(static_cast<double>(pt.refl) * intensity_scaling_factor);
           point.time_stamp = static_cast<uint32_t>(block->header.ts_10us) * 10000;
@@ -396,10 +396,10 @@ void SeyondDecoder::init_f(void)
 int SeyondDecoder::init_f_falcon(void)
 {
   for (uint32_t ich = 0; ich < kSeyondChannelNumber; ich++) {
-    v_angle_offset_[SEYOND_ITEM_TYPE_SPHERE_POINTCLOUD][ich] = ich * kSeyondFaconVAngleDiffBase;
+    v_angle_offset_[SEYOND_ITEM_TYPE_SPHERE_POINTCLOUD][ich] = ich * kSeyondFalconVAngleDiffBase;
     // falconII NT3
     v_angle_offset_[SEYOND_FALCONII_DOT_1_ITEM_TYPE_SPHERE_POINTCLOUD][ich] =
-      ich * kSeyondFaconVAngleDiffBase;
+      ich * kSeyondFalconVAngleDiffBase;
   }
   // init the nps_adjustment_
   memset(nps_adjustment_, 0, sizeof(nps_adjustment_));

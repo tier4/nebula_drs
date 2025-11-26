@@ -655,7 +655,7 @@ public:
 
   /**
    * @brief check if the point is inside the field of view (FOV)
-   * only vilid inside the FOV
+   * only valid inside the FOV
    * @param angle point angle
    * @return Return true if the point is valid, false otherwise
    */
@@ -674,7 +674,7 @@ public:
 private:
   const SeyondDataPacket * anglehv_table_ = nullptr;
 
-  /// @brief check packet vaild
+  /// @brief check packet valid
   /// @param buffer Point Udp Data Buffer
   bool IsPacketValid(const std::vector<uint8_t> & buffer);
   /// @brief Printing the string to RCLCPP_INFO_STREAM
