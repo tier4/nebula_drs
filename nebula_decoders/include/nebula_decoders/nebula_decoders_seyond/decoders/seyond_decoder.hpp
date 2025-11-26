@@ -261,7 +261,7 @@ public:
     int h_index = h_angle >> kTableShift_;
     // avoid index out-of-bound
     h_index = h_index & (kHTableSize_ - 1);
-    if (h_index > kHTableSize_ - 2) {
+    if (h_index > static_cast<int32_t>(kHTableSize_) - 2) {
       h_index = kHTableSize_ - 2;
     }
 

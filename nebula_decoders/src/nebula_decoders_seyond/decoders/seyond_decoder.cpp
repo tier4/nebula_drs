@@ -101,7 +101,7 @@ SeyondDecoder::SeyondDecoder(
 
 template <typename PointType>
 void SeyondDecoder::point_xyz_data_parse_(
-  bool is_en_data, bool is_use_refl, uint32_t point_num, PointType point_ptr)
+  bool /* is_en_data */, bool is_use_refl, uint32_t point_num, PointType point_ptr)
 {
   for (uint32_t i = 0; i < point_num; ++i, ++point_ptr) {
     drivers::NebulaPoint point{};
@@ -402,8 +402,6 @@ int SeyondDecoder::init_f_falcon(void)
       ich * kSeyondFaconVAngleDiffBase;
   }
   // init the nps_adjustment_
-  size_t input_size =
-    (kVTableEffeHalfSize_ * 2 + 1) * (kHTableEffeHalfSize_ * 2 + 1) * 2 * kSeyondChannelNumber;
   memset(nps_adjustment_, 0, sizeof(nps_adjustment_));
   static double k_max[2] = {-100, -100};
   static double k_min[2] = {100, 100};
@@ -434,7 +432,6 @@ int SeyondDecoder::init_f_robin(void)
   }
 
   // init the nps_adjustment_
-  size_t input_size = kRobinScanlines_ * (kHRobinTableEffeHalfSize_ * 2 + 1) * kXYZSize_;
   memset(robin_nps_adjustment_, 0, sizeof(robin_nps_adjustment_));
   static double k_max[3] = {-200, -200, -200};
   static double k_min[3] = {200, 200, 200};
@@ -628,7 +625,6 @@ bool SeyondDecoder::convert_to_xyz_pointcloud(
   }
 
   uint32_t item_count = 0;
-  uint32_t dummy_count = 0;
   item_count = get_points_count(src);
 
   if (append) {
