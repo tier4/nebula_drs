@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #include "nebula_decoders/nebula_decoders_seyond/decoders/seyond_decoder.hpp"
 
 #include "nebula_decoders/nebula_decoders_seyond/decoders/seyond_packet.hpp"
@@ -56,7 +58,6 @@ SeyondDecoder::SeyondDecoder(
   setup_table_(kRadPerSeyondAngleUnit);
   init_f();
 
-  // TODO: add to functions
   if (sensor_configuration->sensor_model == nebula::drivers::SensorModel::SEYOND_ROBIN_W) {
     size_t table_packet_size = sizeof(SeyondDataPacket) + sizeof(SeyondAngleHVTable);
     auto * new_anglehv_table = reinterpret_cast<SeyondDataPacket *>(new char[table_packet_size]);
@@ -100,7 +101,7 @@ SeyondDecoder::SeyondDecoder(
 
 template <typename PointType>
 void SeyondDecoder::point_xyz_data_parse_(
-  bool is_en_data, bool is_use_refl, uint32_t point_num, PointType point_ptr)
+  bool /* is_en_data */, bool is_use_refl, uint32_t point_num, PointType point_ptr)
 {
   for (uint32_t i = 0; i < point_num; ++i, ++point_ptr) {
     drivers::NebulaPoint point{};
@@ -167,7 +168,7 @@ void SeyondDecoder::ProtocolCompatibility(std::vector<uint8_t> & buffer)
   uint32_t * packet_size = reinterpret_cast<uint32_t *>(&buffer[kSeyondPktSizeSectionIndex]);
 
   if (major_version == kSeyondProtocolMajorV1) {
-    // add 16 bytes to the headr
+    // add 16 bytes to the header
     *packet_size += 16;
     buffer.insert(buffer.begin() + kSeyondProtocolOldHeaderLen, 16, 0);
   }
@@ -251,7 +252,7 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
           point.elevation =
             static_cast<float>(full_angles.angles[channel].v_angle * kRadPerSeyondAngleUnit);
           point.distance = radial_distance;
-          // TODO (drwnz): determine correct scaling for intensity mode, more efficinet
+          // TODO(drwnz): determine correct scaling for intensity mode, more efficient
           // implementation.
           point.intensity = std::ceil(static_cast<double>(pt.refl) * intensity_scaling_factor);
           point.time_stamp = static_cast<uint32_t>(block->header.ts_10us) * 10000;
@@ -395,14 +396,12 @@ void SeyondDecoder::init_f(void)
 int SeyondDecoder::init_f_falcon(void)
 {
   for (uint32_t ich = 0; ich < kSeyondChannelNumber; ich++) {
-    v_angle_offset_[SEYOND_ITEM_TYPE_SPHERE_POINTCLOUD][ich] = ich * kSeyondFaconVAngleDiffBase;
+    v_angle_offset_[SEYOND_ITEM_TYPE_SPHERE_POINTCLOUD][ich] = ich * kSeyondFalconVAngleDiffBase;
     // falconII NT3
     v_angle_offset_[SEYOND_FALCONII_DOT_1_ITEM_TYPE_SPHERE_POINTCLOUD][ich] =
-      ich * kSeyondFaconVAngleDiffBase;
+      ich * kSeyondFalconVAngleDiffBase;
   }
   // init the nps_adjustment_
-  size_t input_size =
-    (kVTableEffeHalfSize_ * 2 + 1) * (kHTableEffeHalfSize_ * 2 + 1) * 2 * kSeyondChannelNumber;
   memset(nps_adjustment_, 0, sizeof(nps_adjustment_));
   static double k_max[2] = {-100, -100};
   static double k_min[2] = {100, 100};
@@ -433,7 +432,6 @@ int SeyondDecoder::init_f_robin(void)
   }
 
   // init the nps_adjustment_
-  size_t input_size = kRobinScanlines_ * (kHRobinTableEffeHalfSize_ * 2 + 1) * kXYZSize_;
   memset(robin_nps_adjustment_, 0, sizeof(robin_nps_adjustment_));
   static double k_max[3] = {-200, -200, -200};
   static double k_min[3] = {200, 200, 200};
@@ -627,7 +625,6 @@ bool SeyondDecoder::convert_to_xyz_pointcloud(
   }
 
   uint32_t item_count = 0;
-  uint32_t dummy_count = 0;
   item_count = get_points_count(src);
 
   if (append) {

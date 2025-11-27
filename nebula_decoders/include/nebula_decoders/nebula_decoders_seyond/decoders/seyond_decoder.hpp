@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #pragma once
 
 #include "nebula_decoders/nebula_decoders_seyond/decoders/nps_adjustment.hpp"
@@ -259,7 +261,7 @@ public:
     int h_index = h_angle >> kTableShift_;
     // avoid index out-of-bound
     h_index = h_index & (kHTableSize_ - 1);
-    if (h_index > kHTableSize_ - 2) {
+    if (h_index > static_cast<int32_t>(kHTableSize_) - 2) {
       h_index = kHTableSize_ - 2;
     }
 
@@ -569,8 +571,8 @@ public:
       } else {
         int8_t * byte_ptr = nullptr;
         std::memcpy(&byte_ptr, &block, sizeof(const Block *));
-        byte_ptr =
-          (int8_t *)(uintptr_t)(byte_ptr + static_cast<uint32_t>(sizeof(int8_t)) * unit_size);
+        byte_ptr = reinterpret_cast<int8_t *>(
+          (uintptr_t)(byte_ptr + static_cast<uint32_t>(sizeof(int8_t)) * unit_size));
         std::memcpy(&block, &byte_ptr, sizeof(const Block *));
       }
       if (block == nullptr) {
@@ -622,8 +624,8 @@ public:
       } else {
         int8_t * byte_ptr = nullptr;
         std::memcpy(&byte_ptr, &block, sizeof(const Block *));
-        byte_ptr =
-          (int8_t *)(uintptr_t)(byte_ptr + static_cast<uint32_t>(sizeof(int8_t)) * unit_size);
+        byte_ptr = reinterpret_cast<int8_t *>(
+          (uintptr_t)(byte_ptr + static_cast<uint32_t>(sizeof(int8_t)) * unit_size));
         std::memcpy(&block, &byte_ptr, sizeof(const Block *));
       }
       if (block == nullptr) {
@@ -653,7 +655,7 @@ public:
 
   /**
    * @brief check if the point is inside the field of view (FOV)
-   * only vilid inside the FOV
+   * only valid inside the FOV
    * @param angle point angle
    * @return Return true if the point is valid, false otherwise
    */
@@ -672,7 +674,7 @@ public:
 private:
   const SeyondDataPacket * anglehv_table_ = nullptr;
 
-  /// @brief check packet vaild
+  /// @brief check packet valid
   /// @param buffer Point Udp Data Buffer
   bool IsPacketValid(const std::vector<uint8_t> & buffer);
   /// @brief Printing the string to RCLCPP_INFO_STREAM

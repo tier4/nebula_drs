@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #include "nebula_decoders/nebula_decoders_seyond/seyond_driver.hpp"
 
 namespace nebula

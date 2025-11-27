@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #ifndef NEBULA_SEYOND_DRIVER_H
 #define NEBULA_SEYOND_DRIVER_H
 

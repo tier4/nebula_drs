@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #pragma once
 
 #include <cmath>
@@ -120,7 +122,7 @@ enum SeyondDistanceUnitPerMeter {
 };
 
 enum SeyondVAngleDiffBase {
-  kSeyondFaconVAngleDiffBase = 196,   // FalconIGK,falconII & falcon2.1
+  kSeyondFalconVAngleDiffBase = 196,  // FalconIGK,falconII & falcon2.1
   kSeyondRobinEVAngleDiffBase = 0,    // RobinE
   kSeyondRobinWVAngleDiffBase = 240,  // RobinW
 };
@@ -654,7 +656,7 @@ typedef DEFINE_SEYOND_COMPACT_STRUCT(SeyondDataPacket)
   uint16_t scanner_direction : 1;  /* 0: top->bottom, 1: bottom->top          */
   uint16_t use_reflectance : 1;    /* 0: intensity mode, 1: reflectance mode  */
   uint16_t multi_return_mode : 3;  /* ... */
-  uint16_t confidence_level : 2;   /* 0: no confidence, 3: higest             */
+  uint16_t confidence_level : 2;   /* 0: no confidence, 3: highest            */
   uint16_t is_last_sub_frame : 1;  /* 1: the last sub frame of a frame        */
   uint16_t is_last_sequence : 1;   /* 1: the last piece of a sub frame        */
   uint16_t has_tail : 1;           /* has additional tail struct after points */

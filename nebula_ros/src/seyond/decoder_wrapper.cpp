@@ -1,3 +1,5 @@
+// Copyright 2024 TIER IV, Inc.
+
 #include "nebula_ros/seyond/decoder_wrapper.hpp"
 
 #include <cstdint>
@@ -6,8 +8,6 @@ namespace nebula
 {
 namespace ros
 {
-
-using namespace std::chrono_literals;
 
 SeyondDecoderWrapper::SeyondDecoderWrapper(
   rclcpp::Node * const parent_node, const std::shared_ptr<SeyondHwInterface> & hw_interface,
@@ -54,7 +54,6 @@ SeyondDecoderWrapper::SeyondDecoderWrapper(
     rclcpp::QoS(rclcpp::QoSInitialization(qos_profile.history, 10), qos_profile);
 
   decode_ = decode_flag;
-  use_receive_timestamp_ = parent_node->declare_parameter<bool>("use_receive_time", false);
 
   nebula_points_pub_ = decode_flag ? parent_node->create_publisher<sensor_msgs::msg::PointCloud2>(
                                        "nebula_points", pointcloud_qos)
@@ -62,8 +61,8 @@ SeyondDecoderWrapper::SeyondDecoderWrapper(
 
   RCLCPP_INFO_STREAM(logger_, ". Wrapper=" << status_);
 
-  cloud_watchdog_ =
-    std::make_shared<WatchdogTimer>(*parent_node, 110'000us, [this, parent_node](bool ok) {
+  cloud_watchdog_ = std::make_shared<WatchdogTimer>(
+    *parent_node, std::chrono::microseconds(110'000), [this, parent_node](bool ok) {
       if (ok) return;
       RCLCPP_WARN_THROTTLE(
         logger_, *parent_node->get_clock(), 5000, "Missed pointcloud output deadline");
@@ -164,11 +163,7 @@ void SeyondDecoderWrapper::ProcessCloudPacket(
         auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(
                              std::chrono::duration<double>(std::get<1>(pointcloud_ts)))
                              .count();
-        if (use_receive_timestamp_) {
-          ros_pc_msg_ptr->header.stamp = packet_msg->stamp;
-        } else {
-          ros_pc_msg_ptr->header.stamp = rclcpp::Time(nanoseconds);
-        }
+        ros_pc_msg_ptr->header.stamp = rclcpp::Time(nanoseconds);
         PublishCloud(std::move(ros_pc_msg_ptr), nebula_points_pub_);
       }
     }
