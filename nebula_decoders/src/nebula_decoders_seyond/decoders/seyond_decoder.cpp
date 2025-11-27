@@ -51,8 +51,8 @@ SeyondDecoder::SeyondDecoder(
   output_pc_.reset(new NebulaPointCloud);
 
   // TODO(drwnz): Find the right values for each sensor
-  decode_pc_->reserve(2000000);
-  output_pc_->reserve(2000000);
+  decode_pc_->reserve(kPointCloudReserveSize);
+  output_pc_->reserve(kPointCloudReserveSize);
 
   xyz_from_sphere_.resize(kConvertSize);
   setup_table_(kRadPerSeyondAngleUnit);
@@ -352,8 +352,16 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
   return 0;
 }
 
-std::tuple<drivers::NebulaPointCloudPtr, double> SeyondDecoder::getPointcloud()
+std::tuple<drivers::NebulaPointCloudPtr, double> SeyondDecoder::getPointcloud(bool flush)
 {
+  if (flush) {
+    double scan_timestamp_s = static_cast<double>(decode_scan_timestamp_ns_) * 1e-9;
+    std::tuple<drivers::NebulaPointCloudPtr, double> res =
+      std::make_pair(decode_pc_, scan_timestamp_s);
+    decode_pc_.reset(new NebulaPointCloud);
+    decode_pc_->reserve(kPointCloudReserveSize);
+    return res;
+  }
   double scan_timestamp_s = static_cast<double>(output_scan_timestamp_ns_) * 1e-9;
   return std::make_pair(output_pc_, scan_timestamp_s);
 }
