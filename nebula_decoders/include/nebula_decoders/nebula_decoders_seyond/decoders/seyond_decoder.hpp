@@ -142,6 +142,7 @@ private:
   double current_ts_start_ = 0.0;
   static constexpr double us_in_second_c = 1000000.0;
   static constexpr double ten_us_in_second_c = 100000.0;
+  static const size_t kPointCloudReserveSize = 2000000;
 
 public:
   /// @brief Constructor
@@ -157,7 +158,7 @@ public:
 
   int peek(const std::vector<uint8_t> & packet);
 
-  std::tuple<drivers::NebulaPointCloudPtr, double> getPointcloud() override;
+  std::tuple<drivers::NebulaPointCloudPtr, double> getPointcloud(bool flush = false) override;
 
   static double lookup_cos_table_in_unit(int i);
 

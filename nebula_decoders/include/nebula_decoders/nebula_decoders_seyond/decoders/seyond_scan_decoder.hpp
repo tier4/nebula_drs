@@ -39,7 +39,7 @@ public:
 
   /// @brief Returns the point cloud and timestamp of the last scan
   /// @return A tuple of point cloud and timestamp in nanoseconds
-  virtual std::tuple<drivers::NebulaPointCloudPtr, double> getPointcloud() = 0;
+  virtual std::tuple<drivers::NebulaPointCloudPtr, double> getPointcloud(bool flush = false) = 0;
 };
 }  // namespace drivers
 }  // namespace nebula

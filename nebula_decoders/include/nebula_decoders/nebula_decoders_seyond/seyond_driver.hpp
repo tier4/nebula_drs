@@ -72,6 +72,10 @@ public:
   /// @param nebula_packets Message
   /// @return Bool of whether the scan has been completed or not
   bool PeekCloudPacket(const std::vector<uint8_t> & packet);
+
+  /// @brief Flush the current point cloud
+  /// @return tuple of Point cloud and timestamp
+  std::tuple<drivers::NebulaPointCloudPtr, double> FlushCloudPoints();
 };
 
 }  // namespace drivers

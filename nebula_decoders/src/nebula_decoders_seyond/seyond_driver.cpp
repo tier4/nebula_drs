@@ -54,6 +54,11 @@ bool SeyondDriver::PeekCloudPacket(const std::vector<uint8_t> & packet)
   return scan_decoder_->hasScanned();
 }
 
+std::tuple<drivers::NebulaPointCloudPtr, double> SeyondDriver::FlushCloudPoints()
+{
+  return scan_decoder_->getPointcloud(true);
+}
+
 Status SeyondDriver::SetCalibrationConfiguration(
   const SeyondCalibrationConfiguration & /* calibration_configuration */)
 {
