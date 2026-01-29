@@ -126,7 +126,9 @@ void SeyondDecoder::point_xyz_data_parse_(
       point.intensity = point_ptr->refl;
     }
 
-    point.time_stamp = static_cast<uint32_t>(point_ptr->ts_10us) * 10000;
+    // Calculate time from scan start: pkt_offset_us_ + ts_10us * 10 (in microseconds)
+    // Convert to nanoseconds for time_stamp
+    point.time_stamp = static_cast<uint32_t>((pkt_offset_us_ + point_ptr->ts_10us * 10) * 1000);
     point.distance = point_ptr->radius;
     point.x = point_ptr->z;
     point.y = -(point_ptr->y);
@@ -177,6 +179,8 @@ void SeyondDecoder::ProtocolCompatibility(std::vector<uint8_t> & buffer)
 void SeyondDecoder::data_packet_parse_(const SeyondDataPacket * pkt)
 {
   current_ts_start_ = pkt->common.ts_start_us / us_in_second_c;
+  // Calculate packet offset from scan start (in microseconds)
+  pkt_offset_us_ = pkt->common.ts_start_us - scan_start_us_;
   // adapt different data structures form different lidar
   if (is_en_xyz_data(pkt->type)) {
     const SeyondEnXyzPoint * pt = reinterpret_cast<const SeyondEnXyzPoint *>(
@@ -194,6 +198,9 @@ void SeyondDecoder::data_packet_parse_(const SeyondDataPacket * pkt)
 
 void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
 {
+  // Calculate packet offset from scan start (in microseconds)
+  pkt_offset_us_ = pkt->common.ts_start_us - scan_start_us_;
+
   uint32_t return_number{};
   uint32_t unit_size{};
   double intensity_scaling_factor{};
@@ -255,7 +262,10 @@ void SeyondDecoder::compact_data_packet_parse_(const SeyondDataPacket * pkt)
           // TODO(drwnz): determine correct scaling for intensity mode, more efficient
           // implementation.
           point.intensity = std::ceil(static_cast<double>(pt.refl) * intensity_scaling_factor);
-          point.time_stamp = static_cast<uint32_t>(block->header.ts_10us) * 10000;
+          // Calculate time from scan start: pkt_offset_us_ + ts_10us * 10 (in microseconds)
+          // Convert to nanoseconds for time_stamp
+          point.time_stamp =
+            static_cast<uint32_t>((pkt_offset_us_ + block->header.ts_10us * 10) * 1000);
           decode_pc_->points.emplace_back(point);
         }
       }
@@ -281,11 +291,13 @@ int SeyondDecoder::unpack(const std::vector<uint8_t> & packet, bool decode)
   if (decodable) {
     if (current_packet_id_ == 0) {
       current_packet_id_ = seyond_pkt->idx;
+      scan_start_us_ = seyond_pkt->common.ts_start_us;  // Initialize scan start time
       RCLCPP_INFO_STREAM(logger_, "First packet received");
     }
 
     if (has_scanned_) {
       has_scanned_ = false;
+      scan_start_us_ = seyond_pkt->common.ts_start_us;  // Reset scan start time for new scan
     }
 
     // Publish the whole frame data if scan is complete
