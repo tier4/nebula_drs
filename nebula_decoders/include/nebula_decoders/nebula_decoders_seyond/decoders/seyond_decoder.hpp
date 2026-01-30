@@ -140,8 +140,8 @@ private:
   static int8_t robin_nps_adjustment_[kRobinScanlines_][kHTableSize_][kXYZSize_];
   static int8_t nps_adjustment_[kVTableSize_][kHTableSize_][kSeyondChannelNumber][kXZSize_];
   double current_ts_start_ = 0.0;
-  double scan_start_us_ = 0.0;    // Scan start time in microseconds
-  double pkt_offset_us_ = 0.0;    // Packet offset from scan start in microseconds
+  double scan_start_us_ = 0.0;  // Scan start time in microseconds
+  double pkt_offset_us_ = 0.0;  // Packet offset from scan start in microseconds
   static constexpr double us_in_second_c = 1000000.0;
   static constexpr double ten_us_in_second_c = 100000.0;
   static const size_t kPointCloudReserveSize = 2000000;
