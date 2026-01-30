@@ -20,9 +20,6 @@ jobs:
         with:
           key: ${{ github.ref }}
           path: .cache
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.x
       - uses: actions/setup-python@v5
         with:
           python-version: 3.x
@@ -40,4 +37,5 @@ jobs:
             echo "::warning title=Invalid file permissions automatically fixed::$line"
           done
       - uses: actions/upload-pages-artifact@v3
+      # Requires GitHub Pages to be enabled: Settings → Pages → Build and deployment → Source: GitHub Actions
       - uses: actions/deploy-pages@v4
